@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores Principales: Amarillo y Negro -->
+    <color name="primary_yellow">#FFD700</color> <!-- Amarillo Gold -->
+    <color name="accent_yellow">#FFC107</color>  <!-- Amarillo Amber -->
+    <color name="dark_background">#121212</color> <!-- Negro Fondo -->
+    <color name="card_background">#1E1E1E</color> <!-- Negro Elevado -->
+    <color name="text_white">#FFFFFF</color>
+    <color name="text_black">#000000</color>
+</resources>
