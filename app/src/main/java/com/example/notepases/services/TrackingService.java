@@ -38,6 +38,8 @@ public class TrackingService extends Service {
     private double destLng;
     private int alertRadius = 300;
 
+    private boolean alertAlreadyTriggered = false;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -47,43 +49,59 @@ public class TrackingService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_STOP_SERVICE.equals(intent.getAction())) {
-            stopSelf();
-            return START_NOT_STICKY;
-        }
+        try {
+            if (intent != null){
+                String action = intent.getAction();
+                /// este if silencia la alarma sin detener el GPS (lo enviara AlertActivity)
+                if ("ACTION_MUTE_ALERT".equals(action)) {
+                 alertAlreadyTriggered = true;
+                 return START_NOT_STICKY;
 
-        if (intent != null) {
-            // Actualizar datos de destino y radio
-            if (intent.hasExtra("DEST_LAT") && intent.hasExtra("DEST_LNG")) {
-                destLat = intent.getDoubleExtra("DEST_LAT", 0.0);
-                destLng = intent.getDoubleExtra("DEST_LNG", 0.0);
-            }
-            if (intent.hasExtra("RADIUS_METERS")) {
-                alertRadius = intent.getIntExtra("RADIUS_METERS", 300);
-            }
-
-            // EVALUAR UBICACIÓN SIMULADA
-            if (intent.hasExtra("SIMULATED_LAT") && intent.hasExtra("SIMULATED_LNG")) {
-                double simLat = intent.getDoubleExtra("SIMULATED_LAT", 0.0);
-                double simLng = intent.getDoubleExtra("SIMULATED_LNG", 0.0);
-
-                float distance = LocationUtils.calculateDistanceInMeters(simLat, simLng, destLat, destLng);
-
-                updateNotification("Distancia al destino: " + (int) distance + " m");
-
-                // Si ingresó al radio de alerta, disparar alarma y detener servicio
-                if (distance <= alertRadius) {
-                    triggerArrivalAlert();
-                    stopSelf();
                 }
-                return START_STICKY;
+                /// este if reinicia la bandera para un nuevo viaje (lo enviara el Simulador)
+                if ("ACTIO_RESET_ALERT".equals(action)) {
+                    alertAlreadyTriggered = false;
+
+                }
+                /// esto es opcional para mas adelante si se quiere detener el servicio de manera manual y forzada
+                if(ACTION_STOP_SERVICE.equals(action)){
+                    stopSelf();
+                    return START_NOT_STICKY;
+                }
+
+                // Actualizar datos de destino y radio
+                if (intent.hasExtra("DEST_LAT") && intent.hasExtra("DEST_LNG")) {
+                    destLat = intent.getDoubleExtra("DEST_LAT", 0.0);
+                    destLng = intent.getDoubleExtra("DEST_LNG", 0.0);
+                }
+                if (intent.hasExtra("RADIUS_METERS")) {
+                    alertRadius = intent.getIntExtra("RADIUS_METERS", 300);
+                }
+
+                // EVALUAR UBICACIÓN SIMULADA
+                if (intent.hasExtra("SIMULATED_LAT") && intent.hasExtra("SIMULATED_LNG")) {
+                    double simLat = intent.getDoubleExtra("SIMULATED_LAT", 0.0);
+                    double simLng = intent.getDoubleExtra("SIMULATED_LNG", 0.0);
+
+                    float distance = LocationUtils.calculateDistanceInMeters(simLat, simLng, destLat, destLng);
+
+                    updateNotification("Distancia al destino: " + (int) distance + " m");
+
+                    // Si ingresó al radio de alerta, disparar alarma y detener servicio
+                    if (distance <= alertRadius && !alertAlreadyTriggered) {
+                        triggerArrivalAlert();
+                        alertAlreadyTriggered = true;
+                    }
+                    return START_STICKY;
+                }
             }
-        }
 
-        Notification notification = buildNotification("Monitoreando tu viaje...");
-        startForeground(NOTIFICATION_ID, notification);
-        startLocationUpdates();
-
+            Notification notification = buildNotification("Monitoreando tu viaje...");
+            startForeground(NOTIFICATION_ID, notification);
+            startLocationUpdates();
+        } catch (Exception e){
+            e.printStackTrace();
+            }
         return START_STICKY;
     }
 
@@ -109,7 +127,7 @@ public class TrackingService extends Service {
 
                     if (currentDistance <= alertRadius) {
                         triggerArrivalAlert();
-                        stopSelf();
+                        alertAlreadyTriggered = true;
                         break;
                     }
                 }

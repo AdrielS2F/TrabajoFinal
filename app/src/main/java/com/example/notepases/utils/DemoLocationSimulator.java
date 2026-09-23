@@ -32,6 +32,10 @@ public class DemoLocationSimulator {
         stopSimulation();
         isSimulating = true;
 
+        Intent resetIntent = new Intent(context, TrackingService.class);
+        resetIntent.setAction("ACTIO_RESET_ALERT");
+        context.startService(resetIntent);
+
         new Thread(() -> {
             List<GeoPoint> routePoints = fetchRouteFromOSRM(start, end);
 

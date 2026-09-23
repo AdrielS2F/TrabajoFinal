@@ -88,9 +88,9 @@ public class AlertActivity extends AppCompatActivity {
         }
 
         // Enviar Intent explicito para detener el TrackingService
-        Intent stopServiceIntent = new Intent(this, TrackingService.class);
-        stopServiceIntent.setAction(TrackingService.ACTION_STOP_SERVICE);
-        startService(stopServiceIntent);
+        Intent muteIntent = new Intent(this, TrackingService.class);
+        muteIntent.setAction("ACTION_MUTE_ALERT");
+        startService(muteIntent);
 
         finish(); // Cerrar la Activity
     }
