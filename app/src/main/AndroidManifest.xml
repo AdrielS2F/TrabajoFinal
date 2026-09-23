@@ -50,6 +50,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
 
         <!-- Pantalla de Alerta que salta al llegar -->
@@ -67,6 +68,12 @@
             android:exported="false"
             android:foregroundServiceType="location" />
 
+        <activity
+            android:name=".activities.ContactosActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+
+        </activity>
     </application>
 
 </manifest>
