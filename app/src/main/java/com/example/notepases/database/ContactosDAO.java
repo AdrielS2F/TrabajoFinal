@@ -5,7 +5,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Path;
+
 
 import com.example.notepases.models.Contacto;
 
@@ -63,5 +63,11 @@ public class ContactosDAO {
         return listaContactos;
     }
 
+
+    public void EliminarContacto(Contacto C)
+    {
+        String id = String.valueOf(C.getId());
+        openHelper.getWritableDatabase().delete(ContactosTabla, "_ID=?", new String[]{id});
+    }
 
 }
