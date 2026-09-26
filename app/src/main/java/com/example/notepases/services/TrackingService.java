@@ -59,7 +59,7 @@ public class TrackingService extends Service {
 
                 }
                 /// este if reinicia la bandera para un nuevo viaje (lo enviara el Simulador)
-                if ("ACTIO_RESET_ALERT".equals(action)) {
+                if ("ACTION_RESET_ALERT".equals(action)) {
                     alertAlreadyTriggered = false;
 
                 }
