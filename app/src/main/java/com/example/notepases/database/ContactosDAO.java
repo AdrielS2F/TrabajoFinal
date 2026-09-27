@@ -59,6 +59,7 @@ public class ContactosDAO {
                 c.setTelefono(mcursor.getString(2));
                 listaContactos.add(c);
             } while (mcursor.moveToNext());
+            mcursor.close();
         }
         return listaContactos;
     }

@@ -33,7 +33,7 @@ public class DemoLocationSimulator {
         isSimulating = true;
 
         Intent resetIntent = new Intent(context, TrackingService.class);
-        resetIntent.setAction("ACTIO_RESET_ALERT");
+        resetIntent.setAction("ACTION_RESET_ALERT");
         context.startService(resetIntent);
 
         new Thread(() -> {
