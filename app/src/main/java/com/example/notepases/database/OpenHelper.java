@@ -8,9 +8,7 @@ import androidx.annotation.Nullable;
 
 public class OpenHelper extends SQLiteOpenHelper {
 
-    public static String ContactosCreacionTabla = "CREATE TABLE IF NOT EXISTS Contactos(_ID integer primary key autoincrement," +
-            " nombre text," +
-            " telefono text unique)";
+    public static String ContactosCreacionTabla = "CREATE TABLE IF NOT EXISTS Contactos(_ID integer primary key autoincrement, nombre text, telefono text unique)";
 
     public OpenHelper(@Nullable Context context, @Nullable String name, @Nullable SQLiteDatabase.CursorFactory factory, int version) {
         super(context, name, factory, version);

@@ -71,7 +71,6 @@
             android:name=".activities.ContactosActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
-
         </activity>
     </application>
 

@@ -70,4 +70,15 @@ public class ContactosDAO {
         openHelper.getWritableDatabase().delete(ContactosTabla, "_ID=?", new String[]{id});
     }
 
+
+    public void ModificarContacto(Contacto C)
+    {
+        ContentValues valores = new ContentValues();
+        valores.put(ContactosColumnaNombre, C.getNombre());
+        valores.put(ContactosColumnaTelefono, C.getTelefono());
+
+        String id = String.valueOf(C.getId());
+        openHelper.getWritableDatabase().update(ContactosTabla, valores, "_ID=?", new String[]{id});
+    }
+
 }

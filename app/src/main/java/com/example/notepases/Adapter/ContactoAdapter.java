@@ -1,12 +1,16 @@
 package com.example.notepases.Adapter;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -78,14 +82,81 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
             @Override
             public void onClick(View v) {
 
-                dao.EliminarContacto(item); //ELIMINO BD
-                items.remove(item); // ELIMINO DE LA LISTA QUE TIENE EL ADAPTER
 
-                notifyDataSetChanged(); // ACTUALIZA
+                // DIALOG CONFIRMACION ELIMINACION
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+
+                builder.setTitle("Eliminar contacto");
+
+                builder.setMessage("¿Desea eliminar este contacto? \n\n Nombre: " + item.getNombre() + "\n Teléfono: " + item.getTelefono());
+
+                builder.setPositiveButton("Eliminar", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dao.EliminarContacto(item);
+                        items.remove(item);
+                        notifyDataSetChanged();
+
+                        Toast.makeText(getContext(), "Contacto eliminado", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                builder.setNegativeButton("Cancelar", null);
+
+                builder.show();
+            }
 
 
-                Toast.makeText(getContext(), "Contacto eliminado", Toast.LENGTH_SHORT).show();
 
+        });
+
+
+        // MODIFICACION DENTRO DE ADAPTER PORQUE EL BOTON ELIMINAR ESTA DENTRO DEL ITEM.XML
+
+        ImageButton btnEditar = view.findViewById(R.id.btnEditar);
+
+        btnEditar.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                LinearLayout layout = new LinearLayout(getContext());
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setPadding(50, 40, 50, 10);
+
+                 EditText editNombre = new EditText(getContext());
+                editNombre.setText(item.getNombre());
+                layout.addView(editNombre);
+
+                 EditText editTelefono = new EditText(getContext());
+                editTelefono.setText(item.getTelefono());
+                layout.addView(editTelefono);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle("Editar contacto");
+                builder.setView(layout);
+
+                builder.setPositiveButton("Modificar", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        item.setNombre(editNombre.getText().toString());
+                        item.setTelefono(editTelefono.getText().toString());
+
+                        dao.ModificarContacto(item); // ACTUALIZO BD
+
+                        notifyDataSetChanged(); // ACTUALIZO LISTA VISUAL
+
+                        Toast.makeText(getContext(), "Contacto modificado", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                builder.setNegativeButton("Cancelar", null);
+
+                builder.show();
             }
         });
 
