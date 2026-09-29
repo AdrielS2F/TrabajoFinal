@@ -17,6 +17,7 @@ import com.example.notepases.Adapter.ContactoAdapter;
 import com.example.notepases.R;
 import com.example.notepases.database.ContactosDAO;
 import com.example.notepases.models.Contacto;
+import com.example.notepases.models.Validaciones;
 
 import java.util.ArrayList;
 
@@ -53,65 +54,66 @@ public class ContactosActivity extends AppCompatActivity {
 
 
     // ESTO EVITA CREAR OTRO .XML, APARECE VENTANA EMERGENTE (DIALOG)
-    private void mostrarDialogoAgregar() {
+    public void mostrarDialogoAgregar() {
 
-        //CREACION LAYOUT
         LinearLayout layout = new LinearLayout(this);
-
         layout.setOrientation(LinearLayout.VERTICAL);
-
         layout.setPadding(50, 40, 50, 10);
 
+         EditText etNombre = new EditText(this);
+        etNombre.setHint("Nombre");
+        layout.addView(etNombre);
 
-        //CONTROLES DEL LAYOUT
-
-        EditText editNombre = new EditText(this);
-
-        editNombre.setHint("Nombre");
-
-        layout.addView(editNombre);
-
-
-        EditText editTelefono = new EditText(this);
-
-        editTelefono.setHint("Teléfono");
-
-        layout.addView(editTelefono);
-
-
-        // CREACION Y CONFIGURACION VENTANA DIALOG
+         EditText etTelefono = new EditText(this);
+        etTelefono.setHint("Telefono");
+        layout.addView(etTelefono);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
         builder.setTitle("Nuevo contacto");
+        builder.setView(layout);
 
-        builder.setView(layout);  //LE ASIGNO EL LAYOUT CREADO ARRIBA
-
-        builder.setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
-
-
-            // CLICK EN GUARDAR
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-                Contacto c = new Contacto();
-
-                c.setNombre(editNombre.getText().toString());
-
-                c.setTelefono(editTelefono.getText().toString());
-
-                dao.AgregarContacto(c);
-
-                cargarLista();
-
-                Toast.makeText(getApplicationContext(), "Contacto agregado", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        //BOTON CANCELAR NEGATIVE SALIR SIN CONFIRMAR
+        // BOTONES SIN LISTENER PARA CONFIGURAR POSITIVE MANUALMENTE DESPUES
+        builder.setPositiveButton("Guardar", null);
         builder.setNegativeButton("Cancelar", null);
 
-        builder.show();
+        // SE CREA EL DIALOGO PERO NO SE MUESTRA
+         AlertDialog dialog = builder.create();
+
+        // ESTO SE EJECUTA CUANDO APARECE EL DIALOGO
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialogInterface) {
+
+                // OBTENGO BOTON POSITIVE ("GUARDAR) PARA CONFIGURAR ON CLICK
+                Button btnGuardar = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+
+                // DEFINO QUE HACE EL ON CLIC EN "GUARDAR"
+                btnGuardar.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        // SI ESTA MAL SE QUEDA EN EL DIALOG MOSTRARODO ERROR
+                        if (!Validaciones.validarContacto(etNombre, etTelefono)) {
+                            return;
+                        }
+
+                        Contacto c = new Contacto();
+                        c.setNombre(etNombre.getText().toString());
+                        c.setTelefono(etTelefono.getText().toString());
+
+                        dao.AgregarContacto(c);
+                        cargarLista();
+
+                        Toast.makeText(getApplicationContext(), "Contacto agregado", Toast.LENGTH_SHORT).show();
+
+                        // CIERRE MANUAL CUANDO ESTA OK
+                        dialog.dismiss();
+                    }
+                });
+            }
+        });
+            //SE MUESTAR EL DIALOG Y SE ACTIVA setOnShowListener de ARRIBA
+        dialog.show();
     }
 
-}
+    }

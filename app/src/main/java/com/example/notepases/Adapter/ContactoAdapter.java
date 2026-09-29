@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 import com.example.notepases.R;
 import com.example.notepases.database.ContactosDAO;
 import com.example.notepases.models.Contacto;
+import com.example.notepases.models.Validaciones;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,11 +127,11 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
                 layout.setOrientation(LinearLayout.VERTICAL);
                 layout.setPadding(50, 40, 50, 10);
 
-                 EditText editNombre = new EditText(getContext());
+                EditText editNombre = new EditText(getContext());
                 editNombre.setText(item.getNombre());
                 layout.addView(editNombre);
 
-                 EditText editTelefono = new EditText(getContext());
+                EditText editTelefono = new EditText(getContext());
                 editTelefono.setText(item.getTelefono());
                 layout.addView(editTelefono);
 
@@ -138,25 +139,50 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
                 builder.setTitle("Editar contacto");
                 builder.setView(layout);
 
-                builder.setPositiveButton("Modificar", new DialogInterface.OnClickListener() {
 
+                // BOTONES SIN LISTENER PARA ASIGNAR ACCION MANUAL EN EL POSITIVEBUTTON
+                builder.setPositiveButton("Modificar", null);
+                builder.setNegativeButton("Cancelar", null);
+
+                // SE CREA EL DIALOG PERO NO SE MUESTRA
+                AlertDialog dialog = builder.create();
+
+                // SE EJECUTA SOLOS CUANDO SE MUESTRA EL DIALOG
+                dialog.setOnShowListener(new DialogInterface.OnShowListener() {
                     @Override
-                    public void onClick(DialogInterface dialog, int which) {
+                    public void onShow(DialogInterface dialogInterface) {
 
-                        item.setNombre(editNombre.getText().toString());
-                        item.setTelefono(editTelefono.getText().toString());
 
-                        dao.ModificarContacto(item); // ACTUALIZO BD
+                        // AGARRO BOTON MODIFICAR Y SETEO EVENTO ON CLICK
+                        Button btnModificar = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
 
-                        notifyDataSetChanged(); // ACTUALIZO LISTA VISUAL
+                        // DEFINO QUE HACE EL ON CLIC EN "MODIFICAR"
+                        btnModificar.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
 
-                        Toast.makeText(getContext(), "Contacto modificado", Toast.LENGTH_SHORT).show();
+                                if (!Validaciones.validarContacto(editNombre, editTelefono)) {
+                                    return;
+                                }
+
+                                item.setNombre(editNombre.getText().toString());
+                                item.setTelefono(editTelefono.getText().toString());
+
+                                dao.ModificarContacto(item); // ACTUALIZO BD
+
+                                notifyDataSetChanged(); // ACTUALIZO LISTA VISUAL
+
+                                Toast.makeText(getContext(), "Contacto modificado", Toast.LENGTH_SHORT).show();
+
+
+                                // CIERRE MANUAL CUANDO ESTA OK
+                                dialog.dismiss();
+                            }
+                        });
                     }
                 });
 
-                builder.setNegativeButton("Cancelar", null);
-
-                builder.show();
+                dialog.show();
             }
         });
 
