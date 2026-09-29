@@ -152,7 +152,6 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
                     @Override
                     public void onShow(DialogInterface dialogInterface) {
 
-
                         // AGARRO BOTON MODIFICAR Y SETEO EVENTO ON CLICK
                         Button btnModificar = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
 
@@ -173,7 +172,6 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
                                 notifyDataSetChanged(); // ACTUALIZO LISTA VISUAL
 
                                 Toast.makeText(getContext(), "Contacto modificado", Toast.LENGTH_SHORT).show();
-
 
                                 // CIERRE MANUAL CUANDO ESTA OK
                                 dialog.dismiss();

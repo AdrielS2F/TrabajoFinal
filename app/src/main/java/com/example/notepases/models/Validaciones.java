@@ -15,6 +15,9 @@ public class Validaciones {
         } else if (editNombre.getText().toString().length() < 3) {
             editNombre.setError("Debe tener más de 3 caracteres");
             estado = false;
+        } else if (!editNombre.getText().toString().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]+$")) {
+            editNombre.setError("El nombre solo puede contener letras");
+            estado = false;
         }
 
 
