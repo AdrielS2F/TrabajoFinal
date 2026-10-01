@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     private MapView mapView;
     private EditText etOrigin, etDestination;
-    private Button btnSearch, btnStartTracking, btnContactos ;
+    private Button btnSearch, btnStartTracking,btnContactos;
     private SeekBar sbRadius;
     private TextView tvRadiusLabel;
 
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         etOrigin = findViewById(R.id.etOrigin);
         etDestination = findViewById(R.id.etDestination);
         btnSearch = findViewById(R.id.btnSearch);
-        btnContactos = findViewById(R.id.btnContactos);
+        btnContactos =findViewById(R.id.btnContactos);
         btnStartTracking = findViewById(R.id.btnStartTracking);
         sbRadius = findViewById(R.id.sbRadius);
         tvRadiusLabel = findViewById(R.id.tvRadiusLabel);
@@ -97,13 +97,6 @@ public class MainActivity extends AppCompatActivity {
         btnZoomIn.setOnClickListener(v -> mapView.getController().zoomIn());
         btnZoomOut.setOnClickListener(v -> mapView.getController().zoomOut());
 
-        //boton de contactos
-
-        btnContactos.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
-            startActivity(intent);
-        });
-
         checkPermissions();
 
         // Configurar ícono de limpiar texto (cruz) en Origen y Destino
@@ -113,6 +106,10 @@ public class MainActivity extends AppCompatActivity {
         // Listeners principales
         btnSearch.setOnClickListener(v -> searchLocations());
         btnStartTracking.setOnClickListener(v -> startTrackingService());
+        btnContactos.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
+            startActivity(intent);
+        });
 
         // Control de Slider de Radio
         sbRadius.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
