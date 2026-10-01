@@ -29,9 +29,9 @@
             android:id="@+id/etOrigin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
             android:hint="Origen (ej: Mi ubicación)"
             android:inputType="text"
-            android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
             android:textColor="@color/text_white"
             android:textColorHint="#AAAAAA"
             android:textSize="14sp" />
@@ -42,9 +42,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
             android:hint="Destino (ej: Unicenter)"
             android:inputType="text"
-            android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
             android:textColor="@color/text_white"
             android:textColorHint="#AAAAAA"
             android:textSize="14sp" />
@@ -58,15 +58,29 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSearch"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:layout_marginEnd="4dp"
                 android:text="Buscar Ruta"
                 android:textColor="@color/text_black"
                 android:textStyle="bold"
                 app:backgroundTint="@color/primary_yellow" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnContactos"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Contactos"
+                android:textColor="@color/text_black"
+                android:textStyle="bold"
+                app:backgroundTint="@color/primary_yellow" />
+
         </LinearLayout>
+
     </LinearLayout>
 
     <!-- Botones Flotantes de Zoom (Manuales) -->

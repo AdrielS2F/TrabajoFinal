@@ -96,6 +96,13 @@ public class MainActivity extends AppCompatActivity {
         btnZoomIn.setOnClickListener(v -> mapView.getController().zoomIn());
         btnZoomOut.setOnClickListener(v -> mapView.getController().zoomOut());
 
+        //boton de contactos
+        Button btnContactos = findViewById(R.id.btnContactos);
+        btnContactos.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
+            startActivity(intent);
+        });
+
         checkPermissions();
 
         // Configurar ícono de limpiar texto (cruz) en Origen y Destino
