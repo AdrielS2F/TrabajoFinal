@@ -58,7 +58,6 @@ public class ContactosDAO {
                     c.setTelefono(mcursor.getString(2));
                     listaContactos.add(c);
                 } while (mcursor.moveToNext());
-                mcursor.close();
             }
         } finally {
             mcursor.close(); // se cirra siempre aunque la tabla este vacia
