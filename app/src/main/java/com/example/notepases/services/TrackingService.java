@@ -57,10 +57,12 @@ public class TrackingService extends Service {
                  alertAlreadyTriggered = true;
                  return START_NOT_STICKY;
 
+
                 }
                 /// este if reinicia la bandera para un nuevo viaje (lo enviara el Simulador)
                 if ("ACTION_RESET_ALERT".equals(action)) {
                     alertAlreadyTriggered = false;
+                    return START_STICKY;
 
                 }
                 /// esto es opcional para mas adelante si se quiere detener el servicio de manera manual y forzada
@@ -125,9 +127,9 @@ public class TrackingService extends Service {
 
                     updateNotification("Distancia restante: " + (int) currentDistance + " m");
 
-                    if (currentDistance <= alertRadius) {
-                        triggerArrivalAlert();
+                    if (currentDistance <= alertRadius && !alertAlreadyTriggered) {
                         alertAlreadyTriggered = true;
+                        triggerArrivalAlert();
                         break;
                     }
                 }

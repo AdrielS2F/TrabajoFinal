@@ -45,21 +45,23 @@ public class ContactosDAO {
     public ArrayList<Contacto> getListadoContactos()
     {
         ArrayList<Contacto> listaContactos = new ArrayList<Contacto>();
-        Cursor mcursor = null;
-        mcursor = openHelper.getReadableDatabase().query("Contactos",
+        Cursor mcursor = openHelper.getReadableDatabase().query("Contactos",
                 new String[]{ContactosColumnaID, ContactosColumnaNombre, ContactosColumnaTelefono},
                 null, null, null, null, null);
 
-        if (mcursor.moveToFirst())
-        {
-            do {
-                Contacto c = new Contacto();
-                c.setId(mcursor.getInt(0));
-                c.setNombre(mcursor.getString(1));
-                c.setTelefono(mcursor.getString(2));
-                listaContactos.add(c);
-            } while (mcursor.moveToNext());
-            mcursor.close();
+        try {
+            if (mcursor.moveToFirst()) {
+                do {
+                    Contacto c = new Contacto();
+                    c.setId(mcursor.getInt(0));
+                    c.setNombre(mcursor.getString(1));
+                    c.setTelefono(mcursor.getString(2));
+                    listaContactos.add(c);
+                } while (mcursor.moveToNext());
+                mcursor.close();
+            }
+        } finally {
+            mcursor.close(); // se cirra siempre aunque la tabla este vacia
         }
         return listaContactos;
     }
