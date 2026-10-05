@@ -23,7 +23,6 @@ import com.example.notepases.models.Contacto;
 import com.example.notepases.models.Validaciones;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class ContactoAdapter extends ArrayAdapter<Contacto> {
 
@@ -129,10 +128,12 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
 
                 EditText editNombre = new EditText(getContext());
                 editNombre.setText(item.getNombre());
+                editNombre.setHint("Nombre");
                 layout.addView(editNombre);
 
                 EditText editTelefono = new EditText(getContext());
                 editTelefono.setText(item.getTelefono());
+                editTelefono.setHint("Telefono");
                 layout.addView(editTelefono);
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
