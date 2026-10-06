@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
+import android.widget.ImageButton;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -25,7 +26,7 @@ public class ContactosActivity extends AppCompatActivity {
 
     private ListView listView;
     private Button btnAgregar;
-
+    private ImageButton btnVolver;
     private ContactosDAO dao;
 
 
@@ -37,11 +38,14 @@ public class ContactosActivity extends AppCompatActivity {
 
         listView = findViewById(R.id.listViewContactos);
         btnAgregar = findViewById(R.id.btnAgregar);
+        btnVolver = findViewById(R.id.btnVolver);
 
         dao = new ContactosDAO(this);
         cargarLista();
 
         btnAgregar.setOnClickListener(v -> mostrarDialogoAgregar());
+
+        btnVolver.setOnClickListener(v -> finish());
     }
 
 
