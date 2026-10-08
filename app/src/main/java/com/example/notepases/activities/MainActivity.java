@@ -12,6 +12,7 @@ import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Build;
@@ -45,6 +46,10 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar sbRadius;
     private TextView tvRadiusLabel;
 
+    private TextView tvModeLabel;
+    private Switch switchSimulationMode;
+
+
     private GeoPoint originPoint;
     private GeoPoint destinationPoint;
 
@@ -76,6 +81,13 @@ public class MainActivity extends AppCompatActivity {
         btnStartTracking = findViewById(R.id.btnStartTracking);
         sbRadius = findViewById(R.id.sbRadius);
         tvRadiusLabel = findViewById(R.id.tvRadiusLabel);
+        tvModeLabel = findViewById(R.id.tvModeLabel);
+        switchSimulationMode = findViewById(R.id.switchSimulationMode);
+
+        switchSimulationMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            tvModeLabel.setText(isChecked ? "Modo Simulacion" : "Modo Real");
+        });
+
 
         Button btnZoomIn = findViewById(R.id.btnZoomIn);
         Button btnZoomOut = findViewById(R.id.btnZoomOut);
@@ -277,16 +289,25 @@ public class MainActivity extends AppCompatActivity {
 
         ContextCompat.startForegroundService(this, serviceIntent);
 
-        Toast.makeText(this, "Obteniendo ruta e iniciando monitoreo...", Toast.LENGTH_SHORT).show();
+        boolean useSimulation = switchSimulationMode.isChecked();
 
-        // 2. Iniciar simulación por calles
-        simulator.startSimulation(this, originPoint, destinationPoint, newPoint -> {
-            mapView.getController().animateTo(newPoint);
-            if (originMarker != null) {
-                originMarker.setPosition(newPoint);
+        if(useSimulation){
+            Toast.makeText(this, "Obteniendo ruta e iniciando monitoreo...", Toast.LENGTH_SHORT).show();
+
+            // 2. Iniciar simulación por calles
+            simulator.startSimulation(this, originPoint, destinationPoint, newPoint -> {
+                mapView.getController().animateTo(newPoint);
+                if (originMarker != null) {
+                    originMarker.setPosition(newPoint);
+                }
+                mapView.invalidate();
+            });
+        } else {
+            Toast.makeText(this, "Monitoreo REAL iniciado(gps)", Toast.LENGTH_SHORT).show();
+            if (simulator != null) {
+                simulator.stopSimulation();
             }
-            mapView.invalidate();
-        });
+        }
     }
 
     private void checkPermissions() {

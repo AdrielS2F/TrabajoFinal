@@ -24,6 +24,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+///import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class TrackingService extends Service {
 
@@ -39,6 +40,12 @@ public class TrackingService extends Service {
     private int alertRadius = 300;
 
     private boolean alertAlreadyTriggered = false;
+
+    ///*
+    /// public static final String ACTION_LOCATION_UPDATE = "com.example.notepases.LOCATION_UPDATE";
+    /// public static final String EXTRA_LAT = "lat";
+    /// public static final String EXTRA_LNG = "lng";
+    /// *///
 
     @Override
     public void onCreate() {
@@ -124,6 +131,11 @@ public class TrackingService extends Service {
                             destLat,
                             destLng
                     );
+                    /// Intent broadcastIntent = new Intent("ACTION_LOCATION_UPDATE");
+                    /// broadcastIntent.putExtra(EXTRA_LAT, location.getLatitude());
+                    /// broadcastIntent.putExtra(EXTRA_LNG, location.getLongitude());
+                    /// LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent);
+
 
                     updateNotification("Distancia restante: " + (int) currentDistance + " m");
 

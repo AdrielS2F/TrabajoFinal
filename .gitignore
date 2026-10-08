@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Agent guide (local only)
+AGENTS.md
+MEMORY.md
