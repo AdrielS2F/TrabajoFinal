@@ -6,13 +6,13 @@
     android:layout_height="match_parent"
     android:background="@color/dark_background">
 
-    <!-- Vista del Mapa OSM -->
+    <!-- Mapa OpenStreetMap -->
     <org.osmdroid.views.MapView
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Panel Superior: Búsqueda de Origen y Destino -->
+    <!-- Panel Superior: Búsqueda y Accesos Directos -->
     <LinearLayout
         android:id="@+id/layoutSearch"
         android:layout_width="match_parent"
@@ -25,7 +25,6 @@
         android:padding="12dp">
 
         <!-- Campo Origen -->
-
         <EditText
             android:id="@+id/etOrigin"
             android:layout_width="match_parent"
@@ -37,54 +36,111 @@
             android:textColorHint="#AAAAAA"
             android:textSize="14sp" />
 
-        <!-- Campo Destino -->
-        <EditText
-            android:id="@+id/etDestination"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
-            android:hint="Destino (ej: Unicenter)"
-            android:inputType="text"
-            android:textColor="@color/text_white"
-            android:textColorHint="#AAAAAA"
-            android:textSize="14sp" />
-
-        <!-- Botones de Acción -->
+        <!-- Campo Destino + Botón Estrella Favorito -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSearch"
+            <EditText
+                android:id="@+id/etDestination"
                 android:layout_width="0dp"
-                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="4dp"
-                android:text="Buscar Ruta"
-                android:textColor="@color/text_black"
-                android:textStyle="bold"
-                app:backgroundTint="@color/primary_yellow" />
+                android:layout_weight="1"
+                android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
+                android:hint="Destino (ej: Unicenter)"
+                android:inputType="text"
+                android:textColor="@color/text_white"
+                android:textColorHint="#AAAAAA"
+                android:textSize="14sp" />
+
+            <ImageButton
+                android:id="@+id/btnSaveFavorite"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Guardar Destino Favorito"
+                android:src="@android:drawable/btn_star_big_off"
+                app:tint="@color/primary_yellow" />
+
+        </LinearLayout>
+
+        <!-- Botón Principal: Buscar Ruta (a lo largo) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Buscar Ruta"
+            android:textColor="@color/text_black"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/primary_yellow" />
+
+        <!-- Pestañita para Desplegar / Contraer Opciones -->
+        <LinearLayout
+            android:id="@+id/layoutToggleMore"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/tvToggleMore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Más opciones ▼"
+                android:textColor="@color/primary_yellow"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Panel Desplegable (Oculto por defecto) -->
+        <LinearLayout
+            android:id="@+id/layoutExpandableOptions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnContactos"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
                 android:text="Contactos"
-                android:textColor="@color/text_black"
+                android:textColor="@color/primary_yellow"
                 android:textStyle="bold"
-                app:backgroundTint="@color/primary_yellow" />
+                app:strokeColor="@color/primary_yellow"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDestinosFrecuentes"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="Favoritos"
+                android:textColor="@color/primary_yellow"
+                android:textStyle="bold"
+                app:strokeColor="@color/primary_yellow"
+                app:strokeWidth="1dp" />
 
         </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Botones Flotantes de Zoom (Manuales) -->
+    <!-- Botones de Zoom flotantes (+) y (-) -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -122,7 +178,7 @@
             app:cornerRadius="24dp" />
     </LinearLayout>
 
-    <!-- Panel Inferior: Radio e Inicio de Monitoreo -->
+    <!-- Panel Inferior: Controles de Simulación y Monitoreo -->
     <LinearLayout
         android:id="@+id/layoutControls"
         android:layout_width="match_parent"
@@ -133,33 +189,35 @@
         android:elevation="6dp"
         android:orientation="vertical"
         android:padding="16dp">
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/tvModeLabel"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Modo Simulacion"
-            android:textColor="@color/text_white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <Switch
-            android:id="@+id/switchSimulationMode"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true"
-            android:thumbTint="@color/card_background"
-            android:trackTint="@color/primary_yellow"
-            tools:ignore="UseSwitchCompatOrMaterialXml" />
+            <TextView
+                android:id="@+id/tvModeLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Modo Simulacion"
+                android:textColor="@color/text_white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-    </LinearLayout>
+            <Switch
+                android:id="@+id/switchSimulationMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:thumbTint="@color/card_background"
+                android:trackTint="@color/primary_yellow"
+                tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/tvRadiusLabel"
             android:layout_width="wrap_content"
@@ -169,7 +227,6 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <!-- Barra arrastrable (SeekBar) -->
         <SeekBar
             android:id="@+id/sbRadius"
             android:layout_width="match_parent"

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/card_background"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Título del Modal -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Guardar Destino Frecuente"
+        android:textColor="@color/primary_yellow"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Subtítulo / Descripción -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Asignale un apodo para encontrarlo rápido:"
+        android:textColor="#AAAAAA"
+        android:textSize="13sp" />
+
+    <!-- Campo de Texto con fondo oscuro y letra amarilla/clara -->
+    <EditText
+        android:id="@+id/etDialogAlias"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="#2A2A2A"
+        android:hint="Ej: Casa, Trabajo, Facultad"
+        android:inputType="textCapWords"
+        android:padding="12dp"
+        android:textColor="@color/primary_yellow"
+        android:textColorHint="#888888"
+        android:textSize="15sp" />
+
+    <!-- Botones de Acción -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <!-- Botón Cancelar en Rojo -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogCancel"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CANCELAR"
+            android:textColor="#FF5252"
+            android:textStyle="bold" />
+
+        <!-- Botón Guardar en Amarillo -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="GUARDAR"
+            android:textColor="@color/text_black"
+            android:textStyle="bold"
+            app:backgroundTint="@color/primary_yellow" />
+
+    </LinearLayout>
+
+</LinearLayout>

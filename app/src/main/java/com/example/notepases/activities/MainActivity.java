@@ -9,19 +9,27 @@ import android.location.Geocoder;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Build;
+import android.widget.ListView;
+import android.widget.BaseAdapter;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.notepases.R;
+import com.example.notepases.database.DestinosDAO;
+import com.example.notepases.models.Destino;
 import com.example.notepases.services.TrackingService;
 import com.example.notepases.utils.DemoLocationSimulator;
 import com.example.notepases.utils.LocationUtils;
@@ -33,6 +41,7 @@ import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polygon;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,13 +51,14 @@ public class MainActivity extends AppCompatActivity {
 
     private MapView mapView;
     private EditText etOrigin, etDestination;
-    private Button btnSearch, btnStartTracking,btnContactos;
+    private Button btnSearch, btnStartTracking, btnContactos, btnDestinosFrecuentes;
+    private ImageButton btnSaveFavorite;
     private SeekBar sbRadius;
     private TextView tvRadiusLabel;
 
-    private TextView tvModeLabel;
+    private TextView tvModeLabel, tvToggleMore;
     private Switch switchSimulationMode;
-
+    private LinearLayout layoutToggleMore, layoutExpandableOptions;
 
     private GeoPoint originPoint;
     private GeoPoint destinationPoint;
@@ -61,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private Polygon radiusCircle;
 
     private DemoLocationSimulator simulator;
+    private DestinosDAO destinosDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,22 +83,35 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        // Instanciar DAO de Destinos Frecuentes
+        destinosDAO = new DestinosDAO(this);
+
         // Vistas
         mapView = findViewById(R.id.mapView);
         etOrigin = findViewById(R.id.etOrigin);
         etDestination = findViewById(R.id.etDestination);
+        btnSaveFavorite = findViewById(R.id.btnSaveFavorite);
         btnSearch = findViewById(R.id.btnSearch);
-        btnContactos =findViewById(R.id.btnContactos);
+        btnContactos = findViewById(R.id.btnContactos);
+        btnDestinosFrecuentes = findViewById(R.id.btnDestinosFrecuentes);
         btnStartTracking = findViewById(R.id.btnStartTracking);
         sbRadius = findViewById(R.id.sbRadius);
         tvRadiusLabel = findViewById(R.id.tvRadiusLabel);
         tvModeLabel = findViewById(R.id.tvModeLabel);
         switchSimulationMode = findViewById(R.id.switchSimulationMode);
 
+        // Vistas del Panel Desplegable
+        layoutToggleMore = findViewById(R.id.layoutToggleMore);
+        layoutExpandableOptions = findViewById(R.id.layoutExpandableOptions);
+        tvToggleMore = findViewById(R.id.tvToggleMore);
+
+        // Estado inicial de la estrella: deshabilitada hasta buscar un destino válido
+        btnSaveFavorite.setEnabled(false);
+        btnSaveFavorite.setAlpha(0.4f);
+
         switchSimulationMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             tvModeLabel.setText(isChecked ? "Modo Simulacion" : "Modo Real");
         });
-
 
         Button btnZoomIn = findViewById(R.id.btnZoomIn);
         Button btnZoomOut = findViewById(R.id.btnZoomOut);
@@ -119,9 +143,24 @@ public class MainActivity extends AppCompatActivity {
         // Listeners principales
         btnSearch.setOnClickListener(v -> searchLocations());
         btnStartTracking.setOnClickListener(v -> startTrackingService());
+        btnSaveFavorite.setOnClickListener(v -> mostrarDialogoGuardarDestino());
+
         btnContactos.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
             startActivity(intent);
+        });
+
+        btnDestinosFrecuentes.setOnClickListener(v -> mostrarListaDestinosFrecuentes());
+
+        // Listener para abrir / cerrar la pestañita desplegable
+        layoutToggleMore.setOnClickListener(v -> {
+            if (layoutExpandableOptions.getVisibility() == View.GONE) {
+                layoutExpandableOptions.setVisibility(View.VISIBLE);
+                tvToggleMore.setText("Menos opciones ▲");
+            } else {
+                layoutExpandableOptions.setVisibility(View.GONE);
+                tvToggleMore.setText("Más opciones ▼");
+            }
         });
 
         // Control de Slider de Radio
@@ -141,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
     }
-
 
     @android.annotation.SuppressLint("ClickableViewAccessibility")
     private void setupClearButton(EditText editText) {
@@ -172,6 +210,10 @@ public class MainActivity extends AppCompatActivity {
                                 mapView.getOverlays().remove(radiusCircle);
                                 radiusCircle = null;
                             }
+
+                            // Deshabilitar botón estrella al borrar el destino
+                            btnSaveFavorite.setEnabled(false);
+                            btnSaveFavorite.setAlpha(0.4f);
                         }
 
                         // 3. Detener la simulación en curso si existía
@@ -206,8 +248,13 @@ public class MainActivity extends AppCompatActivity {
             if (destAddresses != null && !destAddresses.isEmpty()) {
                 Address destAddr = destAddresses.get(0);
                 destinationPoint = new GeoPoint(destAddr.getLatitude(), destAddr.getLongitude());
+
+                btnSaveFavorite.setEnabled(true);
+                btnSaveFavorite.setAlpha(1.0f);
             } else {
                 Toast.makeText(this, "No se encontró el Destino", Toast.LENGTH_SHORT).show();
+                btnSaveFavorite.setEnabled(false);
+                btnSaveFavorite.setAlpha(0.4f);
                 return;
             }
 
@@ -224,15 +271,197 @@ public class MainActivity extends AppCompatActivity {
                 originPoint = (GeoPoint) mapView.getMapCenter();
             }
 
-            mapView.getController().animateTo(originPoint);
-            mapView.getController().setZoom(14.0);
-
             updateMapGraphics();
+
+            // 3. AJUSTAR CÁMARA PARA MOSTRAR AMBOS PUNTOS
+            ajustarCamaraParaMostrarPuntos(originPoint, destinationPoint);
+
             Toast.makeText(this, "Ruta cargada correctamente", Toast.LENGTH_SHORT).show();
 
         } catch (IOException e) {
             Toast.makeText(this, "Error de conexión en la búsqueda", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void ajustarCamaraParaMostrarPuntos(GeoPoint puntoA, GeoPoint puntoB) {
+        if (puntoA == null || puntoB == null) return;
+
+        double minLat = Math.min(puntoA.getLatitude(), puntoB.getLatitude());
+        double maxLat = Math.max(puntoA.getLatitude(), puntoB.getLatitude());
+        double minLng = Math.min(puntoA.getLongitude(), puntoB.getLongitude());
+        double maxLng = Math.max(puntoA.getLongitude(), puntoB.getLongitude());
+
+        org.osmdroid.util.BoundingBox boundingBox = new org.osmdroid.util.BoundingBox(
+                maxLat, maxLng, minLat, minLng
+        );
+
+        int paddingPx = 120;
+        mapView.post(() -> mapView.zoomToBoundingBox(boundingBox, true, paddingPx));
+    }
+
+    private void mostrarDialogoGuardarDestino() {
+        if (destinationPoint == null) {
+            Toast.makeText(this, "Buscá una ubicación válida antes de guardar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String coordenadasStr = destinationPoint.getLatitude() + "," + destinationPoint.getLongitude();
+
+        if (destinosDAO.existeUbicacionDestino(coordenadasStr)) {
+            Toast.makeText(this, "Esta ubicación ya está guardada en tus Favoritos", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String textoDestinoActual = etDestination.getText().toString().trim();
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_save_destination, null);
+        EditText etDialogAlias = dialogView.findViewById(R.id.etDialogAlias);
+        Button btnCancel = dialogView.findViewById(R.id.btnDialogCancel);
+        Button btnSave = dialogView.findViewById(R.id.btnDialogSave);
+
+        etDialogAlias.setText(textoDestinoActual);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String apodo = etDialogAlias.getText().toString().trim();
+
+            if (apodo.length() < 3) {
+                etDialogAlias.setError("El nombre debe tener al menos 3 caracteres");
+                return;
+            }
+
+            if (destinosDAO.existeNombreDestino(apodo)) {
+                etDialogAlias.setError("Ya tenés un destino guardado con este nombre");
+                return;
+            }
+
+            Destino nuevoDestino = new Destino(0, apodo, coordenadasStr, selectedRadius);
+            destinosDAO.AgregarDestino(nuevoDestino);
+
+            Toast.makeText(this, "¡Destino '" + apodo + "' guardado en Favoritos!", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void mostrarListaDestinosFrecuentes() {
+        ArrayList<Destino> lista = destinosDAO.getListadoDestinos();
+
+        if (lista.isEmpty()) {
+            Toast.makeText(this, "No tenés destinos guardados aún", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_favoritos_lista, null);
+        ListView lvDestinos = dialogView.findViewById(R.id.lvDestinosFavoritos);
+        Button btnCerrar = dialogView.findViewById(R.id.btnCerrarFavoritos);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        BaseAdapter adapter = new BaseAdapter() {
+            @Override
+            public int getCount() {
+                return lista.size();
+            }
+
+            @Override
+            public Object getItem(int position) {
+                return lista.get(position);
+            }
+
+            @Override
+            public long getItemId(int position) {
+                return lista.get(position).getId();
+            }
+
+            @Override
+            public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                if (convertView == null) {
+                    convertView = getLayoutInflater().inflate(R.layout.item_destino_frecuente, parent, false);
+                }
+
+                Destino destino = lista.get(position);
+
+                TextView tvNombre = convertView.findViewById(R.id.tvDestinoNombre);
+                ImageButton btnDelete = convertView.findViewById(R.id.btnDeleteDestino);
+
+                tvNombre.setText(destino.getNombre());
+
+                // Seleccionar destino al hacer clic en el renglón/nombre
+                convertView.setOnClickListener(v -> {
+                    etDestination.setText(destino.getNombre());
+
+                    String[] coords = destino.getUbicacion().split(",");
+                    double lat = Double.parseDouble(coords[0]);
+                    double lng = Double.parseDouble(coords[1]);
+
+                    destinationPoint = new GeoPoint(lat, lng);
+                    selectedRadius = destino.getRadio();
+
+                    if (selectedRadius >= MIN_RADIUS) {
+                        sbRadius.setProgress(selectedRadius - MIN_RADIUS);
+                    }
+                    tvRadiusLabel.setText("Radio de Alerta: " + selectedRadius + " m");
+
+                    btnSaveFavorite.setEnabled(true);
+                    btnSaveFavorite.setAlpha(1.0f);
+
+                    updateMapGraphics();
+
+                    if (originPoint != null) {
+                        ajustarCamaraParaMostrarPuntos(originPoint, destinationPoint);
+                    } else {
+                        mapView.getController().animateTo(destinationPoint);
+                        mapView.getController().setZoom(15.0);
+                    }
+
+                    Toast.makeText(MainActivity.this, "Cargado: " + destino.getNombre(), Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                });
+
+                // Borrar destino con confirmación previa
+                btnDelete.setOnClickListener(v -> {
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Confirmar eliminación")
+                            .setMessage("¿Estás seguro de que querés eliminar '" + destino.getNombre() + "' de tus favoritos?")
+                            .setPositiveButton("ELIMINAR", (confirmDialog, which) -> {
+                                destinosDAO.EliminarDestino(destino);
+                                lista.remove(position);
+                                notifyDataSetChanged();
+                                Toast.makeText(MainActivity.this, "Destino eliminado", Toast.LENGTH_SHORT).show();
+
+                                if (lista.isEmpty()) {
+                                    dialog.dismiss();
+                                }
+                            })
+                            .setNegativeButton("CANCELAR", null)
+                            .show();
+                });
+
+                return convertView;
+            }
+        };
+
+        lvDestinos.setAdapter(adapter);
+        btnCerrar.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     private void updateMapGraphics() {
@@ -244,10 +473,7 @@ public class MainActivity extends AppCompatActivity {
             originMarker.setPosition(originPoint);
             originMarker.setTitle("Origen");
             originMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-
-            // Asignar el ícono personalizado de Origen desde drawable
             originMarker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_origin_pin));
-
             mapView.getOverlays().add(originMarker);
         }
 
@@ -291,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
 
         boolean useSimulation = switchSimulationMode.isChecked();
 
-        if(useSimulation){
+        if (useSimulation) {
             Toast.makeText(this, "Obteniendo ruta e iniciando monitoreo...", Toast.LENGTH_SHORT).show();
 
             // 2. Iniciar simulación por calles
@@ -319,14 +545,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // codigo para notificaciones
-        if (Build.VERSION.SDK_INT >= 33){
-            if(ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
             }
         }
-
-
     }
 
     @Override
