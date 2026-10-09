@@ -18,7 +18,7 @@ public class DestinosDAO {
     private String destinosTabla = "Destinos";
 
     public DestinosDAO(Context context) {
-        openHelper = new OpenHelper(context, "notepases.db", null, 1);
+        openHelper = new OpenHelper(context, "notepases.db", null, 6);
     }
 
     public void AgregarDestino(Destino D) {

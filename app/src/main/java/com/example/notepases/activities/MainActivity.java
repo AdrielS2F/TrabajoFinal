@@ -1,7 +1,9 @@
 package com.example.notepases.activities;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
@@ -28,7 +30,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.notepases.R;
+import com.example.notepases.database.ContactosDAO;
 import com.example.notepases.database.DestinosDAO;
+import com.example.notepases.models.Contacto;
 import com.example.notepases.models.Destino;
 import com.example.notepases.services.TrackingService;
 import com.example.notepases.utils.DemoLocationSimulator;
@@ -145,9 +149,36 @@ public class MainActivity extends AppCompatActivity {
         btnStartTracking.setOnClickListener(v -> startTrackingService());
         btnSaveFavorite.setOnClickListener(v -> mostrarDialogoGuardarDestino());
 
-        btnContactos.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
-            startActivity(intent);
+
+
+        btnContactos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                String[] opciones = {"Asignar contacto al viaje", "Gestionar contactos"};
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("Contactos");
+
+                // SET ITEMS PERMITE OPCIONES CLICKEABLES EN EL DIALOG (solo permite array string)
+
+                builder.setItems(opciones, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        // WHICH = POSICION FILA
+                        if (which == 0) {
+                            mostrarContactosParaViaje();
+                        } else {
+                            // LLEVA A CRUD CONTACTOS
+                            Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
+                            startActivity(intent);
+                        }
+                    }
+                });
+
+                builder.show();
+            }
         });
 
         btnDestinosFrecuentes.setOnClickListener(v -> mostrarListaDestinosFrecuentes());
@@ -578,5 +609,42 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         mapView.onPause();
+    }
+
+
+
+    // segundo dialog: la lista de contactos guardados en la bd, para elegir uno
+    private void mostrarContactosParaViaje() {
+
+        ContactosDAO dao = new ContactosDAO(this);
+        ArrayList<Contacto> contactos = dao.getListadoContactos();
+
+        if (contactos.isEmpty()) {
+            Toast.makeText(this, "No hay contactos, cargalos en Gestionar contactos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // NECESITO STRING[] PARA EL SET ITEMS (SOLO PERMITE ARRAY STRING)
+         String[] textos = new String[contactos.size()];
+
+        for (int i = 0; i < contactos.size(); i++) {
+            textos[i] = contactos.get(i).getNombre() + " - " + contactos.get(i).getTelefono();
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Avisar a : ");
+
+        builder.setItems(textos, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+                Contacto seleccionado = contactos.get(which);
+
+                Toast.makeText(MainActivity.this, "Se va a enviar una notificacion a " + seleccionado.getNombre(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 }

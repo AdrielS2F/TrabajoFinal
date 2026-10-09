@@ -29,7 +29,7 @@ public class ContactosDAO {
 
 
     public ContactosDAO(Context context) {   //
-        openHelper = new OpenHelper(context, "notepases.db", null, 1);
+        openHelper = new OpenHelper(context, "notepases.db", null, 6);
     }
 
 
