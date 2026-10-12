@@ -76,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
     private DemoLocationSimulator simulator;
     private DestinosDAO destinosDAO;
+    private String numeroContacto;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -544,6 +545,10 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("DEST_LNG", destinationPoint.getLongitude());
         serviceIntent.putExtra("RADIUS_METERS", selectedRadius);
 
+        if(numeroContacto != null && !numeroContacto.isEmpty()){
+            serviceIntent.putExtra("CONTACT_NUMBER", numeroContacto);
+        }
+
         ContextCompat.startForegroundService(this, serviceIntent);
 
         boolean useSimulation = switchSimulationMode.isChecked();
@@ -568,18 +573,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkPermissions() {
+        List<String> permissionsNeeded = new ArrayList<>();
+
         // codigo para pedir el gps (ubicacion)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            permissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+
+        //codigo para pedir SMS
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.SEND_SMS);
+        }
+
+        if (!permissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                    permissionsNeeded.toArray(new String[0]),
                     PERMISSION_REQUEST_CODE);
         }
 
         // codigo para notificaciones
         if (Build.VERSION.SDK_INT >= 33) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
             }
         }
     }
@@ -639,6 +655,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(DialogInterface dialog, int which) {
 
                 Contacto seleccionado = contactos.get(which);
+                numeroContacto = seleccionado.getTelefono();
 
                 Toast.makeText(MainActivity.this, "Se va a enviar una notificacion a " + seleccionado.getNombre(), Toast.LENGTH_SHORT).show();
             }

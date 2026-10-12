@@ -40,6 +40,7 @@ public class TrackingService extends Service {
     private int alertRadius = 300;
 
     private boolean alertAlreadyTriggered = false;
+    private String contactNumber;
 
     ///*
     /// public static final String ACTION_LOCATION_UPDATE = "com.example.notepases.LOCATION_UPDATE";
@@ -103,6 +104,10 @@ public class TrackingService extends Service {
                     }
                     return START_STICKY;
                 }
+
+                if (intent.hasExtra("CONTACT_NUMBER")){
+                    contactNumber = intent.getStringExtra("CONTACT_NUMBER");
+                }
             }
 
             Notification notification = buildNotification("Monitoreando tu viaje...");
@@ -156,9 +161,9 @@ public class TrackingService extends Service {
     private void triggerArrivalAlert() {
         // Opcional: Envío de SMS si está implementado SmsUtils
         try {
-            String emergencyContact = "1122334455";
+            String emergencyContact = (contactNumber != null && !contactNumber.isEmpty()) ? contactNumber : "1122334455";
             String message = "NoTePases: Estoy ingresando a mi radio de destino. ¡Llegando!";
-            com.example.notepases.utils.SmsUtils.sendArrivalSms(emergencyContact, message);
+            com.example.notepases.utils.SmsUtils.sendArrivalSms(this,emergencyContact, message);
         } catch (Exception e) {
             e.printStackTrace();
         }
