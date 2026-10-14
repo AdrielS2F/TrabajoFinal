@@ -24,11 +24,16 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
-///import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 
 public class TrackingService extends Service {
 
     public static final String ACTION_STOP_SERVICE = "com.example.notepases.STOP_SERVICE";
+    public static final String ACTION_REAL_LOCATION_UPDATE = "com.example.notepases.REAL_LOCATION_UPDATE";
+    public static final String EXTRA_LAT = "EXTRA_LAT";
+    public static final String EXTRA_LNG = "EXTRA_LNG";
+
+
     private static final String CHANNEL_ID = "NoTePases_Channel";
     private static final int NOTIFICATION_ID = 1001;
 
@@ -40,13 +45,9 @@ public class TrackingService extends Service {
     private int alertRadius = 300;
 
     private boolean alertAlreadyTriggered = false;
+    private boolean isSimulationMode = true;
     private String contactNumber;
 
-    ///*
-    /// public static final String ACTION_LOCATION_UPDATE = "com.example.notepases.LOCATION_UPDATE";
-    /// public static final String EXTRA_LAT = "lat";
-    /// public static final String EXTRA_LNG = "lng";
-    /// *///
 
     @Override
     public void onCreate() {
@@ -60,14 +61,22 @@ public class TrackingService extends Service {
         try {
             if (intent != null){
                 String action = intent.getAction();
-                /// este if silencia la alarma sin detener el GPS (lo enviara AlertActivity)
+
+                /// SIlencia alarma y detine el monitoreo al llegar
                 if ("ACTION_MUTE_ALERT".equals(action)) {
                  alertAlreadyTriggered = true;
+                 stopLocationUpdates();
+                 stopForeground(true);
+
+                 Intent stopSimIntent = new Intent("ACTION_STOP_SIMULATOR");
+                 stopSimIntent.setPackage(getPackageName());
+                 sendBroadcast(stopSimIntent);
+
                  return START_NOT_STICKY;
 
 
                 }
-                /// este if reinicia la bandera para un nuevo viaje (lo enviara el Simulador)
+                /// este if reinicia la bandera para un nuevo viaje
                 if ("ACTION_RESET_ALERT".equals(action)) {
                     alertAlreadyTriggered = false;
                     return START_STICKY;
@@ -75,6 +84,8 @@ public class TrackingService extends Service {
                 }
                 /// esto es opcional para mas adelante si se quiere detener el servicio de manera manual y forzada
                 if(ACTION_STOP_SERVICE.equals(action)){
+                    stopLocationUpdates();
+                    stopForeground(true);
                     stopSelf();
                     return START_NOT_STICKY;
                 }
@@ -87,47 +98,63 @@ public class TrackingService extends Service {
                 if (intent.hasExtra("RADIUS_METERS")) {
                     alertRadius = intent.getIntExtra("RADIUS_METERS", 300);
                 }
+                if (intent.hasExtra("CONTACT_NUMBER")){
+                    contactNumber = intent.getStringExtra("CONTACT_NUMBER");
+                }
+                //verifica que modo eligio el usuario en el switch
+                if (intent.hasExtra("IS_SIMULATION")){
+                    isSimulationMode = intent.getBooleanExtra("IS_SIMULATION", true);
+                    alertAlreadyTriggered = false;
+                }
 
-                // EVALUAR UBICACIÓN SIMULADA
+                // Recibiendo pasos del simulador
                 if (intent.hasExtra("SIMULATED_LAT") && intent.hasExtra("SIMULATED_LNG")) {
+
+                    if (!isSimulationMode || alertAlreadyTriggered) return START_NOT_STICKY; //Ignorar si cambio a mood real
+
                     double simLat = intent.getDoubleExtra("SIMULATED_LAT", 0.0);
                     double simLng = intent.getDoubleExtra("SIMULATED_LNG", 0.0);
 
                     float distance = LocationUtils.calculateDistanceInMeters(simLat, simLng, destLat, destLng);
-
-                    updateNotification("Distancia al destino: " + (int) distance + " m");
+                    updateNotification("[Simulacion]Distancia al destino: " + (int) distance + " m");
 
                     // Si ingresó al radio de alerta, disparar alarma y detener servicio
                     if (distance <= alertRadius && !alertAlreadyTriggered) {
-                        triggerArrivalAlert();
                         alertAlreadyTriggered = true;
+                        triggerArrivalAlert();
                     }
                     return START_STICKY;
                 }
+                Notification notification  = buildNotification(
+                        isSimulationMode ? "Iniciando simulacion..." : "Esperando señal del gps Real..."
+                );
+                startForeground(NOTIFICATION_ID, notification);
 
-                if (intent.hasExtra("CONTACT_NUMBER")){
-                    contactNumber = intent.getStringExtra("CONTACT_NUMBER");
+                if (isSimulationMode){
+                    stopLocationUpdates();
+                } else {
+                    startLocationUpdates();
                 }
             }
-
-            Notification notification = buildNotification("Monitoreando tu viaje...");
-            startForeground(NOTIFICATION_ID, notification);
-            startLocationUpdates();
         } catch (Exception e){
             e.printStackTrace();
-            }
+        }
         return START_STICKY;
     }
 
+
+
     private void startLocationUpdates() {
-        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
-                .setMinUpdateIntervalMillis(3000)
+        stopLocationUpdates();
+
+        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 4000)
+                .setMinUpdateIntervalMillis(2000)
                 .build();
 
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null) return;
+                if (locationResult == null || isSimulationMode) return;
 
                 for (android.location.Location location : locationResult.getLocations()) {
                     float currentDistance = LocationUtils.calculateDistanceInMeters(
@@ -136,13 +163,13 @@ public class TrackingService extends Service {
                             destLat,
                             destLng
                     );
-                    /// Intent broadcastIntent = new Intent("ACTION_LOCATION_UPDATE");
-                    /// broadcastIntent.putExtra(EXTRA_LAT, location.getLatitude());
-                    /// broadcastIntent.putExtra(EXTRA_LNG, location.getLongitude());
-                    /// LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent);
+                    Intent broadcastIntent = new Intent(ACTION_REAL_LOCATION_UPDATE);
+                    broadcastIntent.setPackage(getPackageName());
+                    broadcastIntent.putExtra(EXTRA_LAT, location.getLatitude());
+                    broadcastIntent.putExtra(EXTRA_LNG, location.getLongitude());
+                    sendBroadcast(broadcastIntent);
 
-
-                    updateNotification("Distancia restante: " + (int) currentDistance + " m");
+                    updateNotification("[gpsreal] Distancia restante: " + (int) currentDistance + " m");
 
                     if (currentDistance <= alertRadius && !alertAlreadyTriggered) {
                         alertAlreadyTriggered = true;
@@ -158,12 +185,21 @@ public class TrackingService extends Service {
         }
     }
 
+    private void stopLocationUpdates(){
+        if (fusedLocationClient != null && locationCallback != null){
+            fusedLocationClient.removeLocationUpdates(locationCallback);
+            locationCallback = null;
+        }
+    }
+
     private void triggerArrivalAlert() {
         // Opcional: Envío de SMS si está implementado SmsUtils
         try {
-            String emergencyContact = (contactNumber != null && !contactNumber.isEmpty()) ? contactNumber : "1122334455";
-            String message = "NoTePases: Estoy ingresando a mi radio de destino. ¡Llegando!";
-            com.example.notepases.utils.SmsUtils.sendArrivalSms(this,emergencyContact, message);
+            if (contactNumber != null && !contactNumber.isEmpty()){
+                String message = "NoTePases: Estoy ingresando a mi radio de destino.";
+                com.example.notepases.utils.SmsUtils.sendArrivalSms(this, contactNumber, message);
+
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -214,9 +250,7 @@ public class TrackingService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (fusedLocationClient != null && locationCallback != null) {
-            fusedLocationClient.removeLocationUpdates(locationCallback);
-        }
+        stopLocationUpdates();
     }
 
     @Nullable

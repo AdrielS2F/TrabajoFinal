@@ -78,6 +78,33 @@ public class MainActivity extends AppCompatActivity {
     private DestinosDAO destinosDAO;
     private String numeroContacto;
 
+    private final android.content.BroadcastReceiver realLocationReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, Intent intent){
+            if (intent == null )return;
+            if ("ACTION_STOP_SIMULATOR".equals(intent.getAction())){
+                if (simulator != null){
+                    simulator.stopSimulation();
+                }
+                return;
+            }
+            if (!switchSimulationMode.isChecked() && TrackingService.ACTION_REAL_LOCATION_UPDATE.equals(intent.getAction())){
+                double lat = intent.getDoubleExtra(TrackingService.EXTRA_LAT,  0.0);
+                double lng = intent.getDoubleExtra(TrackingService.EXTRA_LNG,  0.0);
+                GeoPoint realPoint = new GeoPoint(lat, lng);
+
+                originPoint = realPoint;
+                if (originPoint == null){
+                    updateMapGraphics();
+                } else {
+                    originMarker.setPosition(realPoint);
+                }
+                mapView.getController().animateTo(realPoint);
+                mapView.invalidate();
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,7 +142,18 @@ public class MainActivity extends AppCompatActivity {
         btnSaveFavorite.setAlpha(0.4f);
 
         switchSimulationMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            tvModeLabel.setText(isChecked ? "Modo Simulacion" : "Modo Real");
+            tvModeLabel.setText(isChecked ? "Modo Simulación" : "Modo Real");
+            if (isChecked){
+                etOrigin.setEnabled(true);
+                etOrigin.setHint("Origen (Opcional)");
+            } else{
+                if (simulator != null){
+                    simulator.stopSimulation();
+                }
+                etOrigin.setText("");
+                etOrigin.setHint("Usando tu ubicacion GPS actual...");
+                etOrigin.setEnabled(false);
+            }
         });
 
         Button btnZoomIn = findViewById(R.id.btnZoomIn);
@@ -534,9 +572,19 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Primero buscá un destino", Toast.LENGTH_SHORT).show();
             return;
         }
+        boolean useSimulation = switchSimulationMode.isChecked();
+
+        if (!useSimulation){
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this, "se necesita permiso de GPS para el modo real", Toast.LENGTH_SHORT).show();
+                checkPermissions();
+                return;
+            }
+        }
 
         if (originPoint == null) {
             originPoint = (GeoPoint) mapView.getMapCenter();
+            updateMapGraphics();
         }
 
         // 1. Iniciar servicio
@@ -544,19 +592,18 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("DEST_LAT", destinationPoint.getLatitude());
         serviceIntent.putExtra("DEST_LNG", destinationPoint.getLongitude());
         serviceIntent.putExtra("RADIUS_METERS", selectedRadius);
+        serviceIntent.putExtra("IS_SIMULATION", useSimulation);
 
         if(numeroContacto != null && !numeroContacto.isEmpty()){
             serviceIntent.putExtra("CONTACT_NUMBER", numeroContacto);
         }
 
         ContextCompat.startForegroundService(this, serviceIntent);
-
-        boolean useSimulation = switchSimulationMode.isChecked();
-
+        // ejecuta simulacion o gps real segun corresponda
         if (useSimulation) {
             Toast.makeText(this, "Obteniendo ruta e iniciando monitoreo...", Toast.LENGTH_SHORT).show();
 
-            // 2. Iniciar simulación por calles
+
             simulator.startSimulation(this, originPoint, destinationPoint, newPoint -> {
                 mapView.getController().animateTo(newPoint);
                 if (originMarker != null) {
@@ -565,10 +612,10 @@ public class MainActivity extends AppCompatActivity {
                 mapView.invalidate();
             });
         } else {
-            Toast.makeText(this, "Monitoreo REAL iniciado(gps)", Toast.LENGTH_SHORT).show();
             if (simulator != null) {
                 simulator.stopSimulation();
             }
+            Toast.makeText(this, "Monitoreo REAL iniciado(gps)", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -619,12 +666,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mapView.onResume();
+        android.content.IntentFilter filter = new android.content.IntentFilter();
+        filter.addAction(TrackingService.ACTION_REAL_LOCATION_UPDATE);
+        filter.addAction("ACTION_STOP_SIMULATOR");
+        ContextCompat.registerReceiver(this, realLocationReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mapView.onPause();
+        unregisterReceiver(realLocationReceiver);
     }
 
 
