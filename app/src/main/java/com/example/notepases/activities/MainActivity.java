@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
@@ -77,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private DemoLocationSimulator simulator;
     private DestinosDAO destinosDAO;
     private String numeroContacto;
+    private boolean isTracking = false;
 
     private final android.content.BroadcastReceiver realLocationReceiver = new android.content.BroadcastReceiver() {
         @Override
@@ -86,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 if (simulator != null){
                     simulator.stopSimulation();
                 }
+                updateTrackingButtonState(false);
                 return;
             }
             if (!switchSimulationMode.isChecked() && TrackingService.ACTION_REAL_LOCATION_UPDATE.equals(intent.getAction())){
@@ -185,7 +188,13 @@ public class MainActivity extends AppCompatActivity {
 
         // Listeners principales
         btnSearch.setOnClickListener(v -> searchLocations());
-        btnStartTracking.setOnClickListener(v -> startTrackingService());
+        btnStartTracking.setOnClickListener(v -> {
+            if (isTracking) {
+                stopTrackingService();
+            } else {
+                startTrackingService();
+            }
+        });
         btnSaveFavorite.setOnClickListener(v -> mostrarDialogoGuardarDestino());
 
 
@@ -290,7 +299,9 @@ public class MainActivity extends AppCompatActivity {
                         if (simulator != null) {
                             simulator.stopSimulation();
                         }
-
+                        if (isTracking){
+                            stopTrackingService();
+                        }
                         // 4. Redibujar el mapa
                         mapView.invalidate();
 
@@ -599,6 +610,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         ContextCompat.startForegroundService(this, serviceIntent);
+        updateTrackingButtonState(true); //esto cambia el boton a rojo "detener monitoreo"
+
+
         // ejecuta simulacion o gps real segun corresponda
         if (useSimulation) {
             Toast.makeText(this, "Obteniendo ruta e iniciando monitoreo...", Toast.LENGTH_SHORT).show();
@@ -619,6 +633,32 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    private void updateTrackingButtonState(boolean tracking){
+        isTracking = tracking;
+        if (tracking){
+            btnStartTracking.setText("Detener Monitoreo");
+            btnStartTracking.setTextColor(Color.WHITE);
+            btnStartTracking.setBackgroundColor(Color.RED);
+        } else {
+            btnStartTracking.setText("Iniciar Monitoreo");
+            btnStartTracking.setTextColor(Color.BLACK);
+            btnStartTracking.setBackgroundColor(Color.YELLOW);
+        }
+    }
+    private void stopTrackingService() {
+        if (simulator != null) {
+            simulator.stopSimulation();
+        }
+        Intent stopIntent = new Intent(this, TrackingService.class);
+
+        stopIntent.setAction(TrackingService.ACTION_STOP_SERVICE);
+        startService(stopIntent);
+
+        updateTrackingButtonState(false);
+        Toast.makeText(this, "Monitoreo detenido", Toast.LENGTH_SHORT).show();
+
+    }
     private void checkPermissions() {
         List<String> permissionsNeeded = new ArrayList<>();
 
