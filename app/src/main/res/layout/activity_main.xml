@@ -218,6 +218,17 @@
 
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAsignarContacto"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Asignar contacto al viaje"
+            android:textColor="@color/primary_yellow"
+            android:textStyle="bold"
+            app:strokeColor="@color/primary_yellow"
+            app:strokeWidth="1dp" />
+
         <TextView
             android:id="@+id/tvRadiusLabel"
             android:layout_width="wrap_content"

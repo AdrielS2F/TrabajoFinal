@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     private DestinosDAO destinosDAO;
     private String numeroContacto;
     private boolean isTracking = false;
+    private Button btnAsignarContacto;
 
     private final android.content.BroadcastReceiver realLocationReceiver = new android.content.BroadcastReceiver() {
         @Override
@@ -134,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
         tvRadiusLabel = findViewById(R.id.tvRadiusLabel);
         tvModeLabel = findViewById(R.id.tvModeLabel);
         switchSimulationMode = findViewById(R.id.switchSimulationMode);
+        btnAsignarContacto = findViewById(R.id.btnAsignarContacto);
 
         // Vistas del Panel Desplegable
         layoutToggleMore = findViewById(R.id.layoutToggleMore);
@@ -202,30 +204,8 @@ public class MainActivity extends AppCompatActivity {
         btnContactos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                String[] opciones = {"Asignar contacto al viaje", "Gestionar contactos"};
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle("Contactos");
-
-                // SET ITEMS PERMITE OPCIONES CLICKEABLES EN EL DIALOG (solo permite array string)
-
-                builder.setItems(opciones, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                        // WHICH = POSICION FILA
-                        if (which == 0) {
-                            mostrarContactosParaViaje();
-                        } else {
-                            // LLEVA A CRUD CONTACTOS
-                            Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
-                            startActivity(intent);
-                        }
-                    }
-                });
-
-                builder.show();
+                Intent intent = new Intent(MainActivity.this, ContactosActivity.class);
+                startActivity(intent);
             }
         });
 
@@ -257,6 +237,13 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        btnAsignarContacto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mostrarContactosParaViaje();
+            }
         });
     }
 
