@@ -161,7 +161,7 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
                             @Override
                             public void onClick(View v) {
 
-                                if (!Validaciones.validarContacto(editNombre, editTelefono)) {
+                                if (!Validaciones.validarContacto(editNombre, editTelefono,item.getId())) {
                                     return;
                                 }
 

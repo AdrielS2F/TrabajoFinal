@@ -97,7 +97,7 @@ public class ContactosActivity extends AppCompatActivity {
                     public void onClick(View v) {
 
                         // SI ESTA MAL SE QUEDA EN EL DIALOG MOSTRARODO ERROR
-                        if (!Validaciones.validarContacto(etNombre, etTelefono)) {
+                        if (!Validaciones.validarContacto(etNombre, etTelefono,0)) {
                             return;
                         }
 
