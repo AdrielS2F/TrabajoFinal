@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ImageButton;
 
@@ -60,63 +61,43 @@ public class ContactosActivity extends AppCompatActivity {
     // ESTO EVITA CREAR OTRO .XML, APARECE VENTANA EMERGENTE (DIALOG)
     public void mostrarDialogoAgregar() {
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 40, 50, 10);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_guardar_editar_contacto, null);
+        TextView txtTitulo = dialogView.findViewById(R.id.txtTitulo);
+        EditText etNombre = dialogView.findViewById(R.id.etNombre);
+        EditText etTelefono = dialogView.findViewById(R.id.etTelefono);
+        Button btnGuardar = dialogView.findViewById(R.id.btnGuardar_Modificar);
+        Button btnCancelar = dialogView.findViewById(R.id.btnCancelar);
 
-         EditText etNombre = new EditText(this);
-        etNombre.setHint("Nombre");
-        layout.addView(etNombre);
+        txtTitulo.setText("Nuevo contacto");
 
-         EditText etTelefono = new EditText(this);
-        etTelefono.setHint("Telefono");
-        layout.addView(etTelefono);
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(dialogView).create();
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Nuevo contacto");
-        builder.setView(layout);
 
-        // BOTONES SIN LISTENER PARA CONFIGURAR POSITIVE MANUALMENTE DESPUES
-        builder.setPositiveButton("Guardar", null);
-        builder.setNegativeButton("Cancelar", null);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
 
-        // SE CREA EL DIALOGO PERO NO SE MUESTRA
-         AlertDialog dialog = builder.create();
-
-        // ESTO SE EJECUTA CUANDO APARECE EL DIALOGO
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialogInterface) {
-
-                // OBTENGO BOTON POSITIVE ("GUARDAR) PARA CONFIGURAR ON CLICK
-                Button btnGuardar = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-
-                // DEFINO QUE HACE EL ON CLIC EN "GUARDAR"
-                btnGuardar.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                        // SI ESTA MAL SE QUEDA EN EL DIALOG MOSTRARODO ERROR
-                        if (!Validaciones.validarContacto(etNombre, etTelefono,0)) {
-                            return;
-                        }
-
-                        Contacto c = new Contacto();
-                        c.setNombre(etNombre.getText().toString());
-                        c.setTelefono(etTelefono.getText().toString());
-
-                        dao.AgregarContacto(c);
-                        cargarLista();
-
-                        Toast.makeText(getApplicationContext(), "Contacto agregado", Toast.LENGTH_SHORT).show();
-
-                        // CIERRE MANUAL CUANDO ESTA OK
-                        dialog.dismiss();
-                    }
-                });
+        btnGuardar.setOnClickListener(v -> {
+            // SI ESTA MAL SE QUEDA EN EL DIALOG MOSTRANDO ERROR
+            if (!Validaciones.validarContacto(etNombre, etTelefono, 0)) {
+                return;
             }
+
+            Contacto c = new Contacto();
+            c.setNombre(etNombre.getText().toString());
+            c.setTelefono(etTelefono.getText().toString());
+
+            dao.AgregarContacto(c);
+            cargarLista();
+
+            Toast.makeText(getApplicationContext(), "Contacto agregado", Toast.LENGTH_SHORT).show();
+
+            // CIERRE MANUAL CUANDO ESTA OK
+            dialog.dismiss();
         });
-            //SE MUESTAR EL DIALOG Y SE ACTIVA setOnShowListener de ARRIBA
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
         dialog.show();
     }
 

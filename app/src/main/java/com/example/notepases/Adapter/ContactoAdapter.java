@@ -117,74 +117,47 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
 
         ImageButton btnEditar = view.findViewById(R.id.btnEditar);
 
-        btnEditar.setOnClickListener(new View.OnClickListener() {
+        btnEditar.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            View dialogView = LayoutInflater.from(getContext())
+                    .inflate(R.layout.dialog_guardar_editar_contacto, null);
 
-                LinearLayout layout = new LinearLayout(getContext());
-                layout.setOrientation(LinearLayout.VERTICAL);
-                layout.setPadding(50, 40, 50, 10);
+            TextView txtTitulo = dialogView.findViewById(R.id.txtTitulo);
+            EditText editNombre = dialogView.findViewById(R.id.etNombre);
+            EditText editTelefono = dialogView.findViewById(R.id.etTelefono);
+            Button btnModificar = dialogView.findViewById(R.id.btnGuardar_Modificar);
+            Button btnCancelar = dialogView.findViewById(R.id.btnCancelar);
 
-                EditText editNombre = new EditText(getContext());
-                editNombre.setText(item.getNombre());
-                editNombre.setHint("Nombre");
-                layout.addView(editNombre);
+            txtTitulo.setText("Editar contacto");
+            btnModificar.setText("Modificar");
+            editNombre.setText(item.getNombre());
+            editTelefono.setText(item.getTelefono());
 
-                EditText editTelefono = new EditText(getContext());
-                editTelefono.setText(item.getTelefono());
-                editTelefono.setHint("Telefono");
-                layout.addView(editTelefono);
+            AlertDialog dialog = new AlertDialog.Builder(getContext()).setView(dialogView).create();
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle("Editar contacto");
-                builder.setView(layout);
-
-
-                // BOTONES SIN LISTENER PARA ASIGNAR ACCION MANUAL EN EL POSITIVEBUTTON
-                builder.setPositiveButton("Modificar", null);
-                builder.setNegativeButton("Cancelar", null);
-
-                // SE CREA EL DIALOG PERO NO SE MUESTRA
-                AlertDialog dialog = builder.create();
-
-                // SE EJECUTA SOLOS CUANDO SE MUESTRA EL DIALOG
-                dialog.setOnShowListener(new DialogInterface.OnShowListener() {
-                    @Override
-                    public void onShow(DialogInterface dialogInterface) {
-
-                        // AGARRO BOTON MODIFICAR Y SETEO EVENTO ON CLICK
-                        Button btnModificar = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-
-                        // DEFINO QUE HACE EL ON CLIC EN "MODIFICAR"
-                        btnModificar.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-
-                                if (!Validaciones.validarContacto(editNombre, editTelefono,item.getId())) {
-                                    return;
-                                }
-
-                                item.setNombre(editNombre.getText().toString());
-                                item.setTelefono(editTelefono.getText().toString());
-
-                                dao.ModificarContacto(item); // ACTUALIZO BD
-
-                                notifyDataSetChanged(); // ACTUALIZO LISTA VISUAL
-
-                                Toast.makeText(getContext(), "Contacto modificado", Toast.LENGTH_SHORT).show();
-
-                                // CIERRE MANUAL CUANDO ESTA OK
-                                dialog.dismiss();
-                            }
-                        });
-                    }
-                });
-
-                dialog.show();
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
             }
-        });
 
+            btnModificar.setOnClickListener(x -> {
+                if (!Validaciones.validarContacto(editNombre, editTelefono, item.getId())) {
+                    return;
+                }
+
+                item.setNombre(editNombre.getText().toString());
+                item.setTelefono(editTelefono.getText().toString());
+
+                dao.ModificarContacto(item);
+                notifyDataSetChanged();
+
+                Toast.makeText(getContext(), "Contacto modificado", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            });
+
+            btnCancelar.setOnClickListener(x -> dialog.dismiss());
+
+            dialog.show();
+        });
 
         return view;
     }
