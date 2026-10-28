@@ -24,11 +24,14 @@ import android.widget.Toast;
 import android.os.Build;
 import android.widget.ListView;
 import android.widget.BaseAdapter;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.annotation.NonNull;
 
 import com.example.notepases.R;
 import com.example.notepases.database.ContactosDAO;
@@ -44,11 +47,15 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polygon;
+import org.osmdroid.views.overlay.MapEventsOverlay;
+import org.osmdroid.events.MapEventsReceiver;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -80,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
     private String numeroContacto;
     private boolean isTracking = false;
     private Button btnAsignarContacto;
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private final android.content.BroadcastReceiver realLocationReceiver = new android.content.BroadcastReceiver() {
         @Override
@@ -245,6 +254,8 @@ public class MainActivity extends AppCompatActivity {
                 mostrarContactosParaViaje();
             }
         });
+
+        setupMapLongClickListener();
     }
 
     @android.annotation.SuppressLint("ClickableViewAccessibility")
@@ -706,8 +717,6 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(realLocationReceiver);
     }
 
-
-
     // segundo dialog: la lista de contactos guardados en la bd, para elegir uno
     private void mostrarContactosParaViaje() {
 
@@ -742,5 +751,83 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setNegativeButton("Cancelar", null);
         builder.show();
+    }
+
+    private void setupMapLongClickListener () {
+        MapEventsReceiver mapEventsReceiver = new MapEventsReceiver() {
+
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                return false;
+            }
+
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                if (p != null){
+                    onMapLongPressed(p);
+                }
+                return true;
+            }
+        };
+        MapEventsOverlay mapEventsOverlay = new MapEventsOverlay(mapEventsReceiver);
+        mapView.getOverlays().add(0, mapEventsOverlay);
+    }
+
+    private void onMapLongPressed(GeoPoint geoPoint) {
+        // 1.Dibujar el marcador de destino
+        if (destinationMarker == null) {
+            destinationMarker = new Marker(mapView);
+            destinationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            mapView.getOverlays().add(destinationMarker);
+        }
+        destinationMarker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_location_pin));
+        destinationMarker.setPosition(geoPoint);
+        mapView.invalidate();
+
+        // 2. Ejecutar la geocodificación inversa en segundo plano
+        buscarDireccionEnSegundoPlano(geoPoint);
+    }
+    private void buscarDireccionEnSegundoPlano(GeoPoint geoPoint) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            geocoder.getFromLocation(geoPoint.getLatitude(), geoPoint.getLongitude(), 1, new Geocoder.GeocodeListener() {
+                @Override
+                public void onGeocode(@NonNull List<Address> addresses) {
+                    String direccion = procesarDireccion(addresses, geoPoint);
+                    actualizarUIConDireccion(direccion);
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    actualizarUIConDireccion("Lat: " + geoPoint.getLatitude() + ", Lon: " + geoPoint.getLongitude());
+                }
+            });
+        } else {
+            executorService.execute(() -> {
+                String direccion;
+                try {
+                    List<Address> addresses = geocoder.getFromLocation(geoPoint.getLatitude(), geoPoint.getLongitude(), 1);
+                    direccion = procesarDireccion(addresses, geoPoint);
+                } catch (IOException e) {
+                    direccion = "Lat: " + geoPoint.getLatitude() + ", Lon: " + geoPoint.getLongitude();
+                }
+
+                String finalDireccion = direccion;
+                mainHandler.post(() -> actualizarUIConDireccion(finalDireccion));
+            });
+        }
+    }
+
+    private String procesarDireccion(List<Address> addresses, GeoPoint geoPoint) {
+        if (addresses != null && !addresses.isEmpty()) {
+            return addresses.get(0).getAddressLine(0);
+        } else {
+            return "Lat: " + geoPoint.getLatitude() + ", Lon: " + geoPoint.getLongitude();
+        }
+    }
+
+    private void actualizarUIConDireccion(String direccion) {
+        etDestination.setText(direccion);
     }
 }
