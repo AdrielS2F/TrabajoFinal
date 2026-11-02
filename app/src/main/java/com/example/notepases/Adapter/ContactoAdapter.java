@@ -77,39 +77,42 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
 
 
         // ELIMINACION DENTRO DE ADAPTER PORQUE EL BOTON ELIMINAR ESTA DENTRO DEL ITEM.XML
-        btnEliminar.setOnClickListener(new View.OnClickListener() {
+        // ELIMINAR
+        btnEliminar.setOnClickListener(v -> {
 
-            @Override
-            public void onClick(View v) {
+            // INFLAR EL LAYOUT
+            View dialogView = LayoutInflater.from(getContext())
+                    .inflate(R.layout.dialog_confirmar, null);
 
+            //  BUSCAR LOS ELEMENTOS
+            TextView txtMensaje = dialogView.findViewById(R.id.txtMensaje);
+            Button btnConfirmar = dialogView.findViewById(R.id.btnEliminarConfirmar);
+            Button btnCancelar = dialogView.findViewById(R.id.btnCancelarConfirmar);
 
-                // DIALOG CONFIRMACION ELIMINACION
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            txtMensaje.setText("¿Desea eliminar este contacto?\n\nNombre: " + item.getNombre()
+                    + "\nTeléfono: " + item.getTelefono());
 
-                builder.setTitle("Eliminar contacto");
+            //  CREACION DIALOG
+            AlertDialog dialog = new AlertDialog.Builder(getContext()).setView(dialogView).create();
 
-                builder.setMessage("¿Desea eliminar este contacto? \n\n Nombre: " + item.getNombre() + "\n Teléfono: " + item.getTelefono());
-
-                builder.setPositiveButton("Eliminar", new DialogInterface.OnClickListener() {
-
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                        dao.EliminarContacto(item);
-                        items.remove(item);
-                        notifyDataSetChanged();
-
-                        Toast.makeText(getContext(), "Contacto eliminado", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-                builder.setNegativeButton("Cancelar", null);
-
-                builder.show();
+            // QUITAR FONDO  PREDETERMINADO DIALOG
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
             }
 
+            // LISTENERS
+            btnConfirmar.setOnClickListener(x -> {
+                dao.EliminarContacto(item);
+                items.remove(item);
+                notifyDataSetChanged();  // REDIBUJA EL LISTVIEW ACTUALIZADO
+                Toast.makeText(getContext(), "Contacto eliminado", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            });
 
+            btnCancelar.setOnClickListener(x -> dialog.dismiss());
 
+            // MOSTRAR
+            dialog.show();
         });
 
 
