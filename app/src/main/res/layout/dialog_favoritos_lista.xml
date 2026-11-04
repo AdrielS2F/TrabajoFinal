@@ -14,7 +14,8 @@
         android:text="Mis Favoritos"
         android:textColor="@color/primary_yellow"
         android:textSize="20sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:contentDescription="Destinos favoritos"/>
 
     <!-- Lista de Destinos -->
     <ListView
@@ -35,6 +36,7 @@
         android:layout_marginTop="12dp"
         android:text="CERRAR"
         android:textColor="@color/primary_yellow"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:contentDescription="Volver a la pantalla principal"/>
 
 </LinearLayout>

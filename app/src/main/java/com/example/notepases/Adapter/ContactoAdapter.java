@@ -68,6 +68,7 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
         TextView txtNombre = view.findViewById(R.id.txtNombre);
         TextView txtTelefono = view.findViewById(R.id.txtTelefono);
         ImageButton btnEliminar = view.findViewById(R.id.btnEliminar);
+        ImageButton btnEditar = view.findViewById(R.id.btnEditar);
 
 
         Contacto item = items.get(position);
@@ -75,6 +76,10 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
         txtNombre.setText(item.getNombre());
         txtTelefono.setText(item.getTelefono());
 
+
+        // Configuración de descripciones para TalkBack
+        btnEditar.setContentDescription("Editar contacto " + item.getNombre());
+        btnEliminar.setContentDescription("Eliminar contacto " + item.getNombre());
 
         // ELIMINACION DENTRO DE ADAPTER PORQUE EL BOTON ELIMINAR ESTA DENTRO DEL ITEM.XML
         // ELIMINAR
@@ -117,8 +122,6 @@ public class ContactoAdapter extends ArrayAdapter<Contacto> {
 
 
         // MODIFICACION DENTRO DE ADAPTER PORQUE EL BOTON ELIMINAR ESTA DENTRO DEL ITEM.XML
-
-        ImageButton btnEditar = view.findViewById(R.id.btnEditar);
 
         btnEditar.setOnClickListener(v -> {
 

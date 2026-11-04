@@ -14,7 +14,8 @@
         android:layout_height="wrap_content"
         android:textColor="@color/primary_yellow"
         android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:contentDescription="Agregar contacto"/>
 
     <!-- Nombre -->
     <EditText
@@ -28,7 +29,8 @@
         android:padding="12dp"
         android:textColor="@color/primary_yellow"
         android:textColorHint="#888888"
-        android:textSize="15sp" />
+        android:textSize="15sp"
+        android:contentDescription="Ingrese nombre del contacto"/>
 
     <!-- Teléfono -->
     <EditText
@@ -42,7 +44,8 @@
         android:padding="12dp"
         android:textColor="@color/primary_yellow"
         android:textColorHint="#888888"
-        android:textSize="15sp" />
+        android:textSize="15sp"
+        android:contentDescription="Ingrese telefono del contacto"/>
 
     <!-- Botones -->
     <LinearLayout
@@ -59,7 +62,8 @@
             android:layout_height="wrap_content"
             android:text="CANCELAR"
             android:textColor="#FF5252"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:contentDescription="Cancelar"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuardar_Modificar"
@@ -69,7 +73,8 @@
             android:text="GUARDAR"
             android:textColor="@color/text_black"
             android:textStyle="bold"
-            app:backgroundTint="@color/primary_yellow" />
+            app:backgroundTint="@color/primary_yellow"
+            android:contentDescription="Guardar contacto"/>
 
     </LinearLayout>
 

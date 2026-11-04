@@ -35,7 +35,8 @@
         android:layout_height="wrap_content"
         android:src="@android:drawable/ic_menu_delete"
         android:background="@android:color/transparent"
-        app:tint="#E53935"/>
+        app:tint="#E53935"
+        />
 
 
 

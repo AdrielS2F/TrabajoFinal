@@ -33,6 +33,7 @@
         android:text="DETENER ALARMA"
         android:textColor="#D32F2F"
         android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:contentDescription="Detener alarma"/>
 
 </LinearLayout>

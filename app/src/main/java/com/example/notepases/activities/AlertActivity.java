@@ -75,6 +75,11 @@ public class AlertActivity extends AppCompatActivity {
 
         // 3. Detener la alarma y matar el servicio en segundo plano
         btnStopAlert.setOnClickListener(v -> stopAlertAndService());
+
+        //Talkback anuncia la llegada
+        btnStopAlert.postDelayed(() -> {
+            btnStopAlert.announceForAccessibility("¡Atención! Llegaste a tu destino. Es hora de prepararte para bajar. Toca el botón para detener la alarma.");
+        }, 500);
     }
     private void stopAlertAndService() {
         // Detener sonido

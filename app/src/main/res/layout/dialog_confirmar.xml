@@ -13,7 +13,8 @@
         android:text="Eliminar contacto"
         android:textColor="@color/primary_yellow"
         android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:contentDescription="Eliminar contacto"/>
 
     <TextView
         android:id="@+id/txtMensaje"
@@ -37,7 +38,8 @@
             android:layout_height="wrap_content"
             android:text="CANCELAR"
             android:textColor="@color/primary_yellow"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:contentDescription="Cancelar"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEliminarConfirmar"
@@ -47,7 +49,8 @@
             android:text="ELIMINAR"
             android:textColor="@color/text_white"
             android:textStyle="bold"
-            app:backgroundTint="#FF5252" />
+            app:backgroundTint="#FF5252"
+            android:contentDescription="Eliminar contacto"/>
 
     </LinearLayout>
 

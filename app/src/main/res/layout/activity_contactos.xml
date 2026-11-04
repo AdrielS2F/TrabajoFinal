@@ -26,7 +26,8 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_revert" />
+            android:src="@android:drawable/ic_menu_revert"
+            android:contentDescription="Volver a la pantalla principal"/>
 
 
     </LinearLayout>
@@ -80,6 +81,8 @@
         android:textColor="@color/text_black"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:backgroundTint="@color/primary_yellow"/>
+        app:backgroundTint="@color/primary_yellow"
+        android:contentDescription="Agregar Contacto"/>
+
 
 </LinearLayout>

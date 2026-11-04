@@ -202,8 +202,10 @@ public class MainActivity extends AppCompatActivity {
         btnStartTracking.setOnClickListener(v -> {
             if (isTracking) {
                 stopTrackingService();
+                btnStartTracking.announceForAccessibility("Monitoreo detenido");
             } else {
                 startTrackingService();
+                btnStartTracking.announceForAccessibility("Monitoreo iniciado. Te avisaremos al acercarte a tu destino.");
             }
         });
         btnSaveFavorite.setOnClickListener(v -> mostrarDialogoGuardarDestino());
@@ -225,9 +227,11 @@ public class MainActivity extends AppCompatActivity {
             if (layoutExpandableOptions.getVisibility() == View.GONE) {
                 layoutExpandableOptions.setVisibility(View.VISIBLE);
                 tvToggleMore.setText("Menos opciones ▲");
+                layoutToggleMore.announceForAccessibility("Opciones adicionales desplegadas");
             } else {
                 layoutExpandableOptions.setVisibility(View.GONE);
                 tvToggleMore.setText("Más opciones ▼");
+                layoutToggleMore.announceForAccessibility("Opciones adicionales contraídas");
             }
         });
 
@@ -239,6 +243,11 @@ public class MainActivity extends AppCompatActivity {
                 selectedRadius = LocationUtils.validateRadius(selectedRadius);
                 tvRadiusLabel.setText("Radio de Alerta: " + selectedRadius + " m");
                 updateMapGraphics();
+
+                // Anunciar los metros sólo cuando el usuario mueve el slider
+                if (fromUser) {
+                    seekBar.announceForAccessibility("Radio de alerta: " + selectedRadius + " metros");
+                }
             }
 
             @Override
@@ -571,6 +580,8 @@ public class MainActivity extends AppCompatActivity {
             radiusCircle.getOutlinePaint().setColor(0xFFFFD700);
             radiusCircle.getOutlinePaint().setStrokeWidth(3.0f);
             mapView.getOverlays().add(radiusCircle);
+
+            mapView.setContentDescription("Mapa mostrando destino en " + etDestination.getText().toString() + " con radio de " + selectedRadius + " metros.");
         }
 
         mapView.invalidate();
