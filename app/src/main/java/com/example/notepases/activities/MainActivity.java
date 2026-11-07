@@ -649,10 +649,12 @@ public class MainActivity extends AppCompatActivity {
             btnStartTracking.setText("Detener Monitoreo");
             btnStartTracking.setTextColor(Color.WHITE);
             btnStartTracking.setBackgroundColor(Color.RED);
+            btnStartTracking.setContentDescription("Detener Monitoreo");
         } else {
             btnStartTracking.setText("Iniciar Monitoreo");
             btnStartTracking.setTextColor(Color.BLACK);
             btnStartTracking.setBackgroundColor(Color.YELLOW);
+            btnStartTracking.setContentDescription("Iniciar Monitoreo");
         }
     }
     private void stopTrackingService() {
