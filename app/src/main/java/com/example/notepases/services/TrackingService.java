@@ -18,12 +18,15 @@ import androidx.core.app.NotificationCompat;
 import com.example.notepases.activities.AlertActivity;
 import com.example.notepases.activities.MainActivity;
 import com.example.notepases.utils.LocationUtils;
+import com.example.notepases.utils.SmsUtils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+
+import java.util.ArrayList;
 
 
 public class TrackingService extends Service {
@@ -46,8 +49,7 @@ public class TrackingService extends Service {
 
     private boolean alertAlreadyTriggered = false;
     private boolean isSimulationMode = true;
-    private String contactNumber;
-
+    private ArrayList<String> contactNumbers = new ArrayList<>();
 
     @Override
     public void onCreate() {
@@ -98,8 +100,14 @@ public class TrackingService extends Service {
                 if (intent.hasExtra("RADIUS_METERS")) {
                     alertRadius = intent.getIntExtra("RADIUS_METERS", 300);
                 }
-                if (intent.hasExtra("CONTACT_NUMBER")){
-                    contactNumber = intent.getStringExtra("CONTACT_NUMBER");
+                if (intent.hasExtra("CONTACT_NUMBERS")) {
+                    ArrayList<String> lista = intent.getStringArrayListExtra("CONTACT_NUMBERS");
+
+                    if (lista != null) {
+                        contactNumbers = lista;
+                    } else {
+                        contactNumbers = new ArrayList<>();
+                    }
                 }
                 //verifica que modo eligio el usuario en el switch
                 if (intent.hasExtra("IS_SIMULATION")){
@@ -194,14 +202,9 @@ public class TrackingService extends Service {
 
     private void triggerArrivalAlert() {
         // Opcional: Envío de SMS si está implementado SmsUtils
-        try {
-            if (contactNumber != null && !contactNumber.isEmpty()){
-                String message = "NoTePases: Estoy ingresando a mi radio de destino.";
-                com.example.notepases.utils.SmsUtils.sendArrivalSms(this, contactNumber, message);
-
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        String message = "NoTePases: Estoy ingresando a mi radio de destino.";
+        for (String numero : contactNumbers) {
+            SmsUtils.sendArrivalSms(this, numero, message);
         }
 
         // Abrir la pantalla de alerta

@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -84,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
     private DemoLocationSimulator simulator;
     private DestinosDAO destinosDAO;
-    private String numeroContacto;
+    private ArrayList<String> telefonosAsignados = new ArrayList<>();
     private boolean isTracking = false;
     private Button btnAsignarContacto;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -614,9 +615,7 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("RADIUS_METERS", selectedRadius);
         serviceIntent.putExtra("IS_SIMULATION", useSimulation);
 
-        if(numeroContacto != null && !numeroContacto.isEmpty()){
-            serviceIntent.putExtra("CONTACT_NUMBER", numeroContacto);
-        }
+        serviceIntent.putStringArrayListExtra("CONTACT_NUMBERS", telefonosAsignados);
 
         ContextCompat.startForegroundService(this, serviceIntent);
         updateTrackingButtonState(true); //esto cambia el boton a rojo "detener monitoreo"
@@ -741,29 +740,71 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // NECESITO STRING[] PARA EL SET ITEMS (SOLO PERMITE ARRAY STRING)
-         String[] textos = new String[contactos.size()];
+        // INFLAR Y BUSCAR LOS ELEMENTOS
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_asignar_contactos, null);
+        ListView lvContactos = dialogView.findViewById(R.id.lvContactosAsignar);
+        Button btnCancelar = dialogView.findViewById(R.id.btnCancelarAsignar);
+        Button btnConfirmar = dialogView.findViewById(R.id.btnConfirmarAsignar);
 
+        // TEXTOS EN CADA RENGLON
+        String[] textos = new String[contactos.size()];
         for (int i = 0; i < contactos.size(); i++) {
             textos[i] = contactos.get(i).getNombre() + " - " + contactos.get(i).getTelefono();
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Avisar a : ");
+        // ADAPTER CON DATOS RENGLON DE ARRIBA
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, R.layout.item_contacto_asignar, R.id.ctvContacto, textos);
+        lvContactos.setAdapter(adapter);
 
-        builder.setItems(textos, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-                Contacto seleccionado = contactos.get(which);
-                numeroContacto = seleccionado.getTelefono();
-
-                Toast.makeText(MainActivity.this, "Se va a enviar una notificacion a " + seleccionado.getNombre(), Toast.LENGTH_SHORT).show();
+        // TILDAR LOS QUE YA ESTAN ASIGNADOS
+        for (int i = 0; i < contactos.size(); i++) {
+            if (telefonosAsignados.contains(contactos.get(i).getTelefono())) {
+                lvContactos.setItemChecked(i, true);
             }
+        }
+
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        // BOTONES
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+
+         // VALIDACION MAXIMO 3 CONTACTOS
+
+        btnConfirmar.setOnClickListener(v -> {
+            if (lvContactos.getCheckedItemCount() > 3) {
+                Toast.makeText(this, "Elegí hasta 3 contactos", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            //LIMPIA ARRAY Y SE CHECKEA LO TILDADO
+
+            telefonosAsignados.clear(); //
+            for (int i = 0; i < contactos.size(); i++) {
+                if (lvContactos.isItemChecked(i)) {
+                    telefonosAsignados.add(contactos.get(i).getTelefono());
+                }
+            }
+
+
+            // CAMBIO DE TEXTO EN BTN SEGUN SI TIENE ASIGNADO O NO CONTACTO
+            if (telefonosAsignados.isEmpty()) {
+                btnAsignarContacto.setText("Asignar contacto");
+            } else {
+                btnAsignarContacto.setText("Avisar a " + telefonosAsignados.size() + " contacto(s)");
+            }
+            dialog.dismiss();
         });
 
-        builder.setNegativeButton("Cancelar", null);
-        builder.show();
+        dialog.show();
     }
 
     private void setupMapLongClickListener () {
