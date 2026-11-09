@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
@@ -50,6 +51,8 @@ public class TrackingService extends Service {
     private boolean alertAlreadyTriggered = false;
     private boolean isSimulationMode = true;
     private ArrayList<String> contactNumbers = new ArrayList<>();
+
+    private static final String ALARM_CHANNEL_ID = "Alarma_Channel";
 
     @Override
     public void onCreate() {
@@ -211,21 +214,57 @@ public class TrackingService extends Service {
         Intent alertIntent = new Intent(this, AlertActivity.class);
         alertIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(alertIntent);
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+
+        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
+                this,
+                1002,
+                alertIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ALARM_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_map)
+                .setContentTitle("LLegaste a tu destino")
+                .setContentText("Ingresaste al radio de alerta configurado")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setFullScreenIntent(fullScreenPendingIntent, true) // despierta la alarma
+                .setContentIntent(fullScreenPendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (manager != null) {manager.notify(2002, builder.build());}
+
+        try{
+            startActivity(alertIntent);
+        }catch(Exception e){e.printStackTrace();}
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Monitoreo de Viaje - NoTePases",
-                    NotificationManager.IMPORTANCE_LOW
-            );
             NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
+            if (manager == null) {
+                return;
             }
+
+            manager.createNotificationChannel(new NotificationChannel(
+                    CHANNEL_ID, "Monitoreo de Viaje - NoTePases",
+                    NotificationManager.IMPORTANCE_LOW));
+
+            NotificationChannel alarm = new NotificationChannel(
+                    ALARM_CHANNEL_ID, "Alarma de llegada",
+                    NotificationManager.IMPORTANCE_HIGH);
+            alarm.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            alarm.enableVibration(true);
+            alarm.setBypassDnd(true);
+            alarm.setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build());
+            manager.createNotificationChannel(alarm);
         }
     }
 

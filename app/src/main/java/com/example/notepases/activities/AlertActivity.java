@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.notepases.R;
 import com.example.notepases.services.TrackingService;
+import android.app.NotificationManager;
 
 public class AlertActivity extends AppCompatActivity {
 
@@ -45,6 +46,8 @@ public class AlertActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_alert);
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(2002);
 
         Button btnStopAlert = findViewById(R.id.btnStopAlert);
 
@@ -91,6 +94,9 @@ public class AlertActivity extends AppCompatActivity {
         if (vibrator != null) {
             vibrator.cancel();
         }
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(2002);
+
 
         // Enviar Intent explicito para detener el TrackingService
         Intent muteIntent = new Intent(this, TrackingService.class);
@@ -103,7 +109,9 @@ public class AlertActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (ringtone != null && ringtone.isPlaying()) ringtone.stop();
+        if (vibrator != null) vibrator.cancel();
         // Garantizar detención si la Activity es destruida externamente
-        stopAlertAndService();
+        //stopAlertAndService();
     }
 }

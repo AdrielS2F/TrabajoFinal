@@ -57,6 +57,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import android.app.NotificationManager;
+import android.net.Uri;
+import android.provider.Settings;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -118,6 +121,17 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    private void verificarFullScreenIntent(){
+        if (Build.VERSION.SDK_INT >= 34) {
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm != null && !nm.canUseFullScreenIntent()){
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                        Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -607,6 +621,7 @@ public class MainActivity extends AppCompatActivity {
             originPoint = (GeoPoint) mapView.getMapCenter();
             updateMapGraphics();
         }
+        verificarFullScreenIntent();
 
         // 1. Iniciar servicio
         Intent serviceIntent = new Intent(this, TrackingService.class);
@@ -682,6 +697,12 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             permissionsNeeded.add(Manifest.permission.SEND_SMS);
         }
+        // codigo para notificaciones
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
 
         if (!permissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this,
@@ -689,12 +710,6 @@ public class MainActivity extends AppCompatActivity {
                     PERMISSION_REQUEST_CODE);
         }
 
-        // codigo para notificaciones
-        if (Build.VERSION.SDK_INT >= 33) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
-            }
-        }
     }
 
     @Override
