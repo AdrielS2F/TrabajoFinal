@@ -569,6 +569,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateMapGraphics() {
         mapView.getOverlays().clear();
+        setupMapLongClickListener();
 
         // Marcador Origen con ícono personalizado
         if (originPoint != null) {
@@ -843,17 +844,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onMapLongPressed(GeoPoint geoPoint) {
-        // 1.Dibujar el marcador de destino
-        if (destinationMarker == null) {
-            destinationMarker = new Marker(mapView);
-            destinationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            mapView.getOverlays().add(destinationMarker);
-        }
-        destinationMarker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_location_pin));
-        destinationMarker.setPosition(geoPoint);
-        mapView.invalidate();
+        // 1. Limpiar el origen previo y actualizar el destino al punto presionado
+        originPoint = null;
+        destinationPoint = geoPoint;
 
-        // 2. Ejecutar la geocodificación inversa en segundo plano
+        // 2. Habilitar botón de guardar favorito ya que hay un destino válido
+        btnSaveFavorite.setEnabled(true);
+        btnSaveFavorite.setAlpha(1.0f);
+
+        // 3. Actualizar los gráficos del mapa: limpia el origen anterior,
+        // borra el círculo viejo y dibuja el nuevo destino con su círculo de radio.
+        updateMapGraphics();
+
+        // 4. Ejecutar la geocodificación inversa en segundo plano
         buscarDireccionEnSegundoPlano(geoPoint);
     }
     private void buscarDireccionEnSegundoPlano(GeoPoint geoPoint) {
