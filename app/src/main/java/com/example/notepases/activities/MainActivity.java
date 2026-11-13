@@ -844,16 +844,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onMapLongPressed(GeoPoint geoPoint) {
-        // 1. Limpiar el origen previo y actualizar el destino al punto presionado
-        originPoint = null;
+        // 1. Actualizar el destino al punto presionado (se conserva el origen ya definido)
         destinationPoint = geoPoint;
 
         // 2. Habilitar botón de guardar favorito ya que hay un destino válido
         btnSaveFavorite.setEnabled(true);
         btnSaveFavorite.setAlpha(1.0f);
 
-        // 3. Actualizar los gráficos del mapa: limpia el origen anterior,
-        // borra el círculo viejo y dibuja el nuevo destino con su círculo de radio.
+        // 3. Actualizar los gráficos del mapa: redibuja el origen, y el nuevo destino con su círculo de radio.
         updateMapGraphics();
 
         // 4. Ejecutar la geocodificación inversa en segundo plano
