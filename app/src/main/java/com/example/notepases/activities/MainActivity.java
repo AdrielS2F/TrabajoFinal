@@ -14,6 +14,7 @@ import android.preference.PreferenceManager;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -212,6 +213,10 @@ public class MainActivity extends AppCompatActivity {
         setupClearButton(etOrigin);
         setupClearButton(etDestination);
 
+        // Autocompletado de lugares (estilo Google Maps)
+        setupAutocomplete((AutoCompleteTextView) etOrigin);
+        setupAutocomplete((AutoCompleteTextView) etDestination);
+
         // Listeners principales
         btnSearch.setOnClickListener(v -> searchLocations());
         btnStartTracking.setOnClickListener(v -> {
@@ -282,6 +287,54 @@ public class MainActivity extends AppCompatActivity {
         setupMapLongClickListener();
     }
 
+    // ----- Autocompletado: mientras se escribe, se piden direcciones al Geocoder ---
+    private void setupAutocomplete(AutoCompleteTextView campo) {
+        // Adapter con la lista de sugerencias (el filtro vacío evita que Android oculte resultados)
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.item_sugerencia, new ArrayList<>()) {
+            @NonNull @Override
+            public android.widget.Filter getFilter() {
+                return new android.widget.Filter() {
+                    @Override protected FilterResults performFiltering(CharSequence c) { return new FilterResults(); }
+                    @Override protected void publishResults(CharSequence c, FilterResults r) { }
+                };
+            }
+        };
+        campo.setAdapter(adapter);
+
+        // Guarda la búsqueda agendada para poder cancelarla (array de 1 porque la lambda exige variable final)
+        Runnable[] busquedaPendiente = new Runnable[1];
+
+        campo.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                String texto = s.toString().trim();
+
+                // Debounce: cada letra cancela la búsqueda pendiente
+                mainHandler.removeCallbacks(busquedaPendiente[0]);
+                if (texto.length() < 3) return;
+
+                // ...y agenda una nueva para 500 ms después (si el usuario sigue escribiendo, se cancela)
+                busquedaPendiente[0] = () -> executorService.execute(() -> {
+                    ArrayList<String> sugerencias = new ArrayList<>();
+                    try {
+                        for (Address a : new Geocoder(MainActivity.this, Locale.getDefault()).getFromLocationName(texto, 5)) {
+                            sugerencias.add(a.getAddressLine(0));
+                        }
+                    } catch (IOException ignored) { }
+
+                    // Mostrar la lista en el hilo principal
+                    mainHandler.post(() -> {
+                        if (sugerencias.isEmpty() || sugerencias.contains(texto) || !campo.hasFocus()) return;
+                        adapter.clear();
+                        adapter.addAll(sugerencias);
+                        campo.showDropDown();
+                    });
+                });
+                mainHandler.postDelayed(busquedaPendiente[0], 500);
+            }
+        });
+    }
     @android.annotation.SuppressLint("ClickableViewAccessibility")
     private void setupClearButton(EditText editText) {
         editText.setOnTouchListener((v, event) -> {
