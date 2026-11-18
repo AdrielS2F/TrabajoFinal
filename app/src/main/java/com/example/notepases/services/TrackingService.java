@@ -210,6 +210,12 @@ public class TrackingService extends Service {
             SmsUtils.sendArrivalSms(this, numero, message);
         }
 
+        // Al llegar, se elimina la notificación "NoTePases en ejecución" y se deja de monitorear
+        stopLocationUpdates();
+        stopForeground(true);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(NOTIFICATION_ID);
+
         // Abrir la pantalla de alerta
         Intent alertIntent = new Intent(this, AlertActivity.class);
         alertIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -270,8 +276,15 @@ public class TrackingService extends Service {
 
     private Notification buildNotification(String contentText) {
         Intent notificationIntent = new Intent(this, MainActivity.class);
+        // Reutiliza la instancia existente de MainActivity en vez de crear una nueva
+        notificationIntent.setAction(Intent.ACTION_MAIN);
+        notificationIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+                this, 0, notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("NoTePases en ejecución")

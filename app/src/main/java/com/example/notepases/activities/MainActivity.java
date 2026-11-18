@@ -43,6 +43,10 @@ import com.example.notepases.models.Destino;
 import com.example.notepases.services.TrackingService;
 import com.example.notepases.utils.DemoLocationSimulator;
 import com.example.notepases.utils.LocationUtils;
+import android.annotation.SuppressLint;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.util.GeoPoint;
@@ -112,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
                 GeoPoint realPoint = new GeoPoint(lat, lng);
 
                 originPoint = realPoint;
-                if (originPoint == null){
+                if (originMarker == null){
                     updateMapGraphics();
                 } else {
                     originMarker.setPosition(realPoint);
@@ -335,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    @SuppressLint("ClickableViewAccessibility")
     private void setupClearButton(EditText editText) {
         editText.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -388,6 +392,39 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void mostrarRutaCargada() {
+        updateMapGraphics();
+        ajustarCamaraParaMostrarPuntos(originPoint, destinationPoint);
+        Toast.makeText(this, "Ruta cargada correctamente", Toast.LENGTH_SHORT).show();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void obtenerUbicacionRealYMostrarRuta() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "se necesita permiso de GPS para el modo real", Toast.LENGTH_SHORT).show();
+            checkPermissions();
+            return;
+        }
+        FusedLocationProviderClient client =
+                LocationServices.getFusedLocationProviderClient(this);
+        client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        originPoint = new GeoPoint(location.getLatitude(), location.getLongitude());
+                        mostrarRutaCargada();
+                    } else {
+                        client.getLastLocation().addOnSuccessListener(last -> {
+                            if (last != null) {
+                                originPoint = new GeoPoint(last.getLatitude(), last.getLongitude());
+                                mostrarRutaCargada();
+                            } else {
+                                Toast.makeText(this, "No se pudo obtener tu ubicación GPS", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Error al obtener ubicación GPS", Toast.LENGTH_SHORT).show());
+    }
     private void searchLocations() {
         String originText = etOrigin.getText().toString().trim();
         String destText = etDestination.getText().toString().trim();
@@ -414,7 +451,12 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            // 2. Geolocalizar Origen
+            // 2. Origen
+            if (!switchSimulationMode.isChecked()) {
+                // MODO REAL: usar la ubicación GPS actual del dispositivo
+                obtenerUbicacionRealYMostrarRuta();
+                return;
+            }
             if (!originText.isEmpty()) {
                 List<Address> originAddresses = geocoder.getFromLocationName(originText, 1);
                 if (originAddresses != null && !originAddresses.isEmpty()) {
@@ -427,13 +469,7 @@ public class MainActivity extends AppCompatActivity {
                 originPoint = (GeoPoint) mapView.getMapCenter();
             }
 
-            updateMapGraphics();
-
-            // 3. AJUSTAR CÁMARA PARA MOSTRAR AMBOS PUNTOS
-            ajustarCamaraParaMostrarPuntos(originPoint, destinationPoint);
-
-            Toast.makeText(this, "Ruta cargada correctamente", Toast.LENGTH_SHORT).show();
-
+            mostrarRutaCargada();
         } catch (IOException e) {
             Toast.makeText(this, "Error de conexión en la búsqueda", Toast.LENGTH_SHORT).show();
         }
