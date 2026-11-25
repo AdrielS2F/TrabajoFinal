@@ -146,6 +146,16 @@ public class MainActivity extends AppCompatActivity {
         Configuration.getInstance().load(getApplicationContext(),
                 PreferenceManager.getDefaultSharedPreferences(getApplicationContext()));
 
+        // Ajustes de rendimiento de tiles (deben ir despues de load())
+        org.osmdroid.config.IConfigurationProvider osmConfig = Configuration.getInstance();
+        osmConfig.setTileFileSystemCacheMaxBytes(500L * 1024 * 1024);  // cache en disco: 500 MB
+        osmConfig.setTileFileSystemCacheTrimBytes(400L * 1024 * 1024); // recorta hasta 400 MB al llenarse
+        osmConfig.setCacheMapTileCount((short) 12);                    // tiles extra en memoria
+        osmConfig.setCacheMapTileOvershoot((short) 12);
+        osmConfig.setTileDownloadThreads((short) 8);                   // descargas en paralelo
+        osmConfig.setTileDownloadMaxQueueSize((short) 80);
+        osmConfig.setTileFileSystemThreads((short) 8);                 // lecturas de cache en paralelo
+
         setContentView(R.layout.activity_main);
 
         // Instanciar DAO de Destinos Frecuentes
@@ -153,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Vistas
         mapView = findViewById(R.id.mapView);
-        mapView.setMaxZoomLevel(18.0);
+        mapView.setMaxZoomLevel(19.0);
         etOrigin = findViewById(R.id.etOrigin);
         etDestination = findViewById(R.id.etDestination);
         btnSaveFavorite = findViewById(R.id.btnSaveFavorite);
@@ -202,6 +212,7 @@ public class MainActivity extends AppCompatActivity {
                 new String[]{"https://a.tile.openstreetmap.fr/hot/", "https://b.tile.openstreetmap.fr/hot/"}));
 
         mapView.setMultiTouchControls(true);
+        mapView.setTilesScaledToDpi(true); // tiles mas nitidos en pantallas de alta densidad
         mapView.getController().setZoom(14.0);
 
         // Ubicación inicial por defecto (Obelisco)
