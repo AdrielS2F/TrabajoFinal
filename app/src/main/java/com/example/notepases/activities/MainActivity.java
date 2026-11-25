@@ -153,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Vistas
         mapView = findViewById(R.id.mapView);
+        mapView.setMaxZoomLevel(18.0);
         etOrigin = findViewById(R.id.etOrigin);
         etDestination = findViewById(R.id.etDestination);
         btnSaveFavorite = findViewById(R.id.btnSaveFavorite);
@@ -987,6 +988,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void actualizarUIConDireccion(String direccion) {
-        etDestination.setText(direccion);
+        runOnUiThread(() -> etDestination.setText(direccion));
     }
 }
