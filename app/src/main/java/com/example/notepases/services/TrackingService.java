@@ -33,6 +33,7 @@ import java.util.ArrayList;
 public class TrackingService extends Service {
 
     public static final String ACTION_STOP_SERVICE = "com.example.notepases.STOP_SERVICE";
+    public static final String ACTION_UPDATE_RADIUS = "com.example.notepases.UPDATE_RADIUS";
     public static final String ACTION_REAL_LOCATION_UPDATE = "com.example.notepases.REAL_LOCATION_UPDATE";
     public static final String EXTRA_LAT = "EXTRA_LAT";
     public static final String EXTRA_LNG = "EXTRA_LNG";
@@ -86,6 +87,11 @@ public class TrackingService extends Service {
                     alertAlreadyTriggered = false;
                     return START_STICKY;
 
+                }
+                /// Cambia el radio de alerta con el viaje ya iniciado (no reinicia nada mas)
+                if (ACTION_UPDATE_RADIUS.equals(action)) {
+                    alertRadius = intent.getIntExtra("RADIUS_METERS", alertRadius);
+                    return START_STICKY;
                 }
                 /// esto es opcional para mas adelante si se quiere detener el servicio de manera manual y forzada
                 if(ACTION_STOP_SERVICE.equals(action)){

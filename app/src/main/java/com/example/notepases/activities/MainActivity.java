@@ -278,11 +278,19 @@ public class MainActivity extends AppCompatActivity {
                 selectedRadius = MIN_RADIUS + progress;
                 selectedRadius = LocationUtils.validateRadius(selectedRadius);
                 tvRadiusLabel.setText("Radio de Alerta: " + selectedRadius + " m");
-                updateMapGraphics();
+                updateRadiusCircleOnly();
 
                 // Anunciar los metros sólo cuando el usuario mueve el slider
                 if (fromUser) {
                     seekBar.announceForAccessibility("Radio de alerta: " + selectedRadius + " metros");
+
+                    // Si el viaje ya esta en curso, avisar al servicio del nuevo radio
+                    if (isTracking) {
+                        Intent radiusIntent = new Intent(MainActivity.this, TrackingService.class);
+                        radiusIntent.setAction(TrackingService.ACTION_UPDATE_RADIUS);
+                        radiusIntent.putExtra("RADIUS_METERS", selectedRadius);
+                        startService(radiusIntent);
+                    }
                 }
             }
 
@@ -666,6 +674,18 @@ public class MainActivity extends AppCompatActivity {
         btnCerrar.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+
+    // Al mover el slider solo se recalcula el circulo existente.
+    private void updateRadiusCircleOnly() {
+        if (radiusCircle == null || destinationPoint == null
+                || !mapView.getOverlays().contains(radiusCircle)) {
+            updateMapGraphics();
+            return;
+        }
+        radiusCircle.setPoints(Polygon.pointsAsCircle(destinationPoint, (double) selectedRadius));
+        mapView.setContentDescription("Mapa mostrando destino en " + etDestination.getText().toString() + " con radio de " + selectedRadius + " metros.");
+        mapView.invalidate();
     }
 
     private void updateMapGraphics() {
