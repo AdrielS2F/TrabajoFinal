@@ -218,7 +218,7 @@ public class TrackingService extends Service {
 
         int distanciaRedondeada = (int) distanciaActual;
 
-        String message = "NoTePases: Estoy llegando a " + destinationAddress + ". Estoy a " + distanciaRedondeada + " metros aproximadamente";
+        String message = "NoTePases: Estoy llegando a mi destino. Estoy a " + distanciaRedondeada + " metros aproximadamente";
 
         for (String numero : contactNumbers) {
             SmsUtils.sendArrivalSms(this, numero, message);
