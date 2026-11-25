@@ -779,8 +779,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    // Oculta (sube) o vuelve a mostrar el panel superior (origen, destino, etc.) con animacion.
+    // Los textos de los campos se conservan porque la vista solo se desliza, no se destruye.
+    private void animarPanelSuperior(boolean ocultar) {
+        final View panel = findViewById(R.id.layoutSearch);
+        if (panel == null) return;
+        panel.animate().cancel();
+        if (ocultar) {
+            View foco = getCurrentFocus();
+            if (foco != null) foco.clearFocus();
+            float desplazamiento = -(panel.getHeight() + panel.getTop() + 50f);
+            panel.animate().translationY(desplazamiento).alpha(0f).setDuration(300)
+                    .withEndAction(() -> panel.setVisibility(View.GONE)).start();
+        } else {
+            panel.setVisibility(View.VISIBLE);
+            panel.animate().translationY(0f).alpha(1f).setDuration(300).start();
+        }
+    }
+
     private void updateTrackingButtonState(boolean tracking){
+        boolean cambio = (isTracking != tracking);
         isTracking = tracking;
+        if (cambio) animarPanelSuperior(tracking);
         if (tracking){
             btnStartTracking.setText("Detener Monitoreo");
             btnStartTracking.setTextColor(Color.WHITE);
