@@ -1,5 +1,15 @@
 package com.example.notepases.activities;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.ContactsContract;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -47,6 +57,67 @@ public class ContactosActivity extends AppCompatActivity {
         btnAgregar.setOnClickListener(v -> mostrarDialogoAgregar());
 
         btnVolver.setOnClickListener(v -> finish());
+
+        findViewById(R.id.btnImportar).setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                    == PackageManager.PERMISSION_GRANTED) {
+                abrirSelectorContactos();
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_CONTACTS}, REQ_READ_CONTACTS);
+            }
+        });
+    }
+
+    private static final int REQ_READ_CONTACTS = 2001;
+
+    private final ActivityResultLauncher<Intent> selector = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), r -> {
+                if (r.getResultCode() == RESULT_OK && r.getData() != null && r.getData().getData() != null) {
+                    guardarContactoElegido(r.getData().getData());
+                }
+            });
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(code, perms, res);
+        if (code == REQ_READ_CONTACTS) {
+            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) {
+                abrirSelectorContactos();
+            } else {
+                Toast.makeText(this, "Sin permiso no se pueden importar contactos", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void abrirSelectorContactos() {
+        selector.launch(new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI));
+    }
+
+    private void guardarContactoElegido(Uri uri) {
+        try (Cursor c = getContentResolver().query(uri, new String[]{
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                ContactsContract.CommonDataKinds.Phone.NUMBER}, null, null, null)) {
+            if (c == null || !c.moveToFirst()) return;
+            String nombre = c.getString(0);
+            String tel = c.getString(1) == null ? "" : c.getString(1).replaceAll("\\D", "");
+            if (tel.length() < 10 || tel.length() > 15) {
+                Toast.makeText(this, "El número debe tener entre 10 y 15 dígitos", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            for (Contacto x : dao.getListadoContactos()) {
+                if (x.getTelefono().equals(tel)) {
+                    Toast.makeText(this, "Ese teléfono ya está registrado", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+            Contacto nuevo = new Contacto();
+            nuevo.setNombre(nombre);
+            nuevo.setTelefono(tel);
+            dao.AgregarContacto(nuevo);
+            cargarLista();
+            Toast.makeText(this, "Contacto importado", Toast.LENGTH_SHORT).show();
+        }
     }
 
 

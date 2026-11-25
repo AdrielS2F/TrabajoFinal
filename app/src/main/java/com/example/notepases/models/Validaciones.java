@@ -28,11 +28,14 @@ public class Validaciones {
         if (editTelefono.getText().toString().isEmpty()) {
             editTelefono.setError("El campo está vacío");
             estado = false;
-        } else if (editTelefono.getText().toString().length() != 10) {
-            editTelefono.setError("El teléfono debe tener 10 dígitos");
-            estado = false;
         } else if (!editTelefono.getText().toString().matches("^[0-9]+$")) {
             editTelefono.setError("Solo se permiten números");
+            estado = false;
+        } else if (editTelefono.getText().toString().length() < 10) {
+            editTelefono.setError("El teléfono debe tener al menos 10 dígitos");
+            estado = false;
+        } else if (editTelefono.getText().toString().length() > 15) {
+            editTelefono.setError("El teléfono no puede tener más de 15 dígitos");
             estado = false;
         } else {
 
