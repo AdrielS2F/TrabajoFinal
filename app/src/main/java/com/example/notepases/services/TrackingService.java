@@ -37,7 +37,7 @@ public class TrackingService extends Service {
     public static final String EXTRA_LAT = "EXTRA_LAT";
     public static final String EXTRA_LNG = "EXTRA_LNG";
 
-
+    private String destinationAddress = "Dirección no disponible";
     private static final String CHANNEL_ID = "NoTePases_Channel";
     private static final int NOTIFICATION_ID = 1001;
 
@@ -103,6 +103,10 @@ public class TrackingService extends Service {
                 if (intent.hasExtra("RADIUS_METERS")) {
                     alertRadius = intent.getIntExtra("RADIUS_METERS", 300);
                 }
+                if (intent.hasExtra("DEST_ADDRESS")) {
+                    destinationAddress = intent.getStringExtra("DEST_ADDRESS");
+                }
+
                 if (intent.hasExtra("CONTACT_NUMBERS")) {
                     ArrayList<String> lista = intent.getStringArrayListExtra("CONTACT_NUMBERS");
 
@@ -132,7 +136,7 @@ public class TrackingService extends Service {
                     // Si ingresó al radio de alerta, disparar alarma y detener servicio
                     if (distance <= alertRadius && !alertAlreadyTriggered) {
                         alertAlreadyTriggered = true;
-                        triggerArrivalAlert();
+                        triggerArrivalAlert(distance);
                     }
                     return START_STICKY;
                 }
@@ -184,7 +188,7 @@ public class TrackingService extends Service {
 
                     if (currentDistance <= alertRadius && !alertAlreadyTriggered) {
                         alertAlreadyTriggered = true;
-                        triggerArrivalAlert();
+                        triggerArrivalAlert(currentDistance);
                         break;
                     }
                 }
@@ -203,9 +207,13 @@ public class TrackingService extends Service {
         }
     }
 
-    private void triggerArrivalAlert() {
+    private void triggerArrivalAlert(float distanciaActual) {
         // Opcional: Envío de SMS si está implementado SmsUtils
-        String message = "NoTePases: Estoy ingresando a mi radio de destino.";
+
+        int distanciaRedondeada = (int) distanciaActual;
+
+        String message = "NoTePases: Estoy llegando a " + destinationAddress + ". Estoy a " + distanciaRedondeada + " metros aproximadamente";
+
         for (String numero : contactNumbers) {
             SmsUtils.sendArrivalSms(this, numero, message);
         }

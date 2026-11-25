@@ -720,7 +720,7 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("DEST_LNG", destinationPoint.getLongitude());
         serviceIntent.putExtra("RADIUS_METERS", selectedRadius);
         serviceIntent.putExtra("IS_SIMULATION", useSimulation);
-
+        serviceIntent.putExtra("DEST_ADDRESS", etDestination.getText().toString());
         serviceIntent.putStringArrayListExtra("CONTACT_NUMBERS", telefonosAsignados);
 
         ContextCompat.startForegroundService(this, serviceIntent);
