@@ -52,6 +52,8 @@ public class TrackingService extends Service {
     private boolean alertAlreadyTriggered = false;
     private boolean isSimulationMode = true;
     private ArrayList<String> contactNumbers = new ArrayList<>();
+    private String customMessage = "";
+    private boolean includeDistance = true;
 
     private static final String ALARM_CHANNEL_ID = "Alarma_Channel";
 
@@ -122,6 +124,11 @@ public class TrackingService extends Service {
                         contactNumbers = new ArrayList<>();
                     }
                 }
+                if (intent.hasExtra("CUSTOM_MESSAGE")) {
+                    String m = intent.getStringExtra("CUSTOM_MESSAGE");
+                    customMessage = (m == null) ? "" : m.trim();
+                }
+                includeDistance = intent.getBooleanExtra("INCLUDE_DISTANCE", includeDistance);
                 //verifica que modo eligio el usuario en el switch
                 if (intent.hasExtra("IS_SIMULATION")){
                     isSimulationMode = intent.getBooleanExtra("IS_SIMULATION", true);
@@ -218,7 +225,15 @@ public class TrackingService extends Service {
 
         int distanciaRedondeada = (int) distanciaActual;
 
-        String message = "NoTePases: Estoy llegando a mi destino. Estoy a " + distanciaRedondeada + " metros aproximadamente";
+        String message;
+        if (customMessage.isEmpty()) {
+            // Mensaje default
+            message = "NoTePases: Estoy llegando a mi destino. Estoy a " + distanciaRedondeada + " metros aproximadamente";
+        } else if (includeDistance) {
+            message = "NoTePases: " + customMessage + " (estoy a " + distanciaRedondeada + " metros)";
+        } else {
+            message = "NoTePases: " + customMessage;
+        }
 
         for (String numero : contactNumbers) {
             SmsUtils.sendArrivalSms(this, numero, message);

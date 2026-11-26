@@ -96,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> telefonosAsignados = new ArrayList<>();
     private boolean isTracking = false;
     private Button btnAsignarContacto;
+    private String mensajePersonalizado = ""; // vacio = usar mensaje default (solo en memoria)
+    private boolean incluirDistancia = true;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -753,6 +755,8 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("IS_SIMULATION", useSimulation);
         serviceIntent.putExtra("DEST_ADDRESS", etDestination.getText().toString());
         serviceIntent.putStringArrayListExtra("CONTACT_NUMBERS", telefonosAsignados);
+        serviceIntent.putExtra("CUSTOM_MESSAGE", mensajePersonalizado);
+        serviceIntent.putExtra("INCLUDE_DISTANCE", incluirDistancia);
 
         ContextCompat.startForegroundService(this, serviceIntent);
         updateTrackingButtonState(true); //esto cambia el boton a rojo "detener monitoreo"
@@ -930,6 +934,11 @@ public class MainActivity extends AppCompatActivity {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
 
+        // BOTON PERSONALIZAR MENSAJE
+        Button btnPersonalizar = dialogView.findViewById(R.id.btnPersonalizarMensaje);
+        btnPersonalizar.setText(mensajePersonalizado.isEmpty() ? "Personalizar mensaje" : "Mensaje personalizado ✓");
+        btnPersonalizar.setOnClickListener(v -> mostrarDialogoMensaje(btnPersonalizar));
+
         // BOTONES
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
 
@@ -962,6 +971,30 @@ public class MainActivity extends AppCompatActivity {
         });
 
         dialog.show();
+    }
+
+    // dialog para escribir el mensaje personalizado (vacio = mensaje default)
+    private void mostrarDialogoMensaje(Button botonOrigen) {
+        View view = getLayoutInflater().inflate(R.layout.dialog_mensaje_personalizado, null);
+        EditText etMensaje = view.findViewById(R.id.etMensajePersonalizado);
+        Button btnCancelarMsg = view.findViewById(R.id.btnCancelarMensaje);
+        Button btnGuardarMsg = view.findViewById(R.id.btnGuardarMensaje);
+        android.widget.CheckBox cbDistancia = view.findViewById(R.id.cbDistancia);
+        etMensaje.setText(mensajePersonalizado);
+        cbDistancia.setChecked(incluirDistancia);
+
+        AlertDialog dlg = new AlertDialog.Builder(this).setView(view).create();
+        if (dlg.getWindow() != null) {
+            dlg.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        btnCancelarMsg.setOnClickListener(v -> dlg.dismiss());
+        btnGuardarMsg.setOnClickListener(v -> {
+            mensajePersonalizado = etMensaje.getText().toString().trim();
+            incluirDistancia = cbDistancia.isChecked();
+            botonOrigen.setText(mensajePersonalizado.isEmpty() ? "Personalizar mensaje" : "Mensaje personalizado ✓");
+            dlg.dismiss();
+        });
+        dlg.show();
     }
 
     private void setupMapLongClickListener () {

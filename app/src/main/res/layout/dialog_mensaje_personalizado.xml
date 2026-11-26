@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/card_background"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Personalizar mensaje"
+        android:textColor="@color/primary_yellow"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Si lo dejás vacío se usa el mensaje por defecto. Marcá &quot;Distancia&quot; para agregar los metros al final."
+        android:textColor="#AAAAAA"
+        android:textSize="13sp" />
+
+    <EditText
+        android:id="@+id/etMensajePersonalizado"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="#2A2A2A"
+        android:gravity="top|start"
+        android:hint="Ej: Ya casi llego"
+        android:inputType="textMultiLine|textCapSentences"
+        android:maxLength="120"
+        android:minLines="3"
+        android:padding="12dp"
+        android:textColor="@color/primary_yellow"
+        android:textColorHint="#888888"
+        android:textSize="15sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <CheckBox
+            android:id="@+id/cbDistancia"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:text="Distancia"
+            android:textColor="@color/primary_yellow"
+            android:buttonTint="@color/primary_yellow" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelarMensaje"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CANCELAR"
+            android:textColor="#FF5252"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuardarMensaje"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="GUARDAR"
+            android:textColor="@color/text_black"
+            android:textStyle="bold"
+            app:backgroundTint="@color/primary_yellow" />
+    </LinearLayout>
+</LinearLayout>
