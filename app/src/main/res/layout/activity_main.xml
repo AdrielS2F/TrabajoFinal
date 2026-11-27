@@ -26,11 +26,14 @@
         android:padding="12dp">
 
         <!-- Campo Origen -->
-        <AutoCompleteTextView android:id="@+id/etOrigin" android:completionThreshold="3" android:dropDownVerticalOffset="0dp"
-            android:layout_width="match_parent"
+        <AutoCompleteTextView
+            android:id="@+id/etOrigin"
+            android:layout_width="322dp"
             android:layout_height="wrap_content"
+            android:completionThreshold="3"
             android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
-            android:hint="Origen (ej: Mi ubicación)"
+            android:dropDownVerticalOffset="0dp"
+            android:hint="Origen"
             android:inputType="text"
             android:textColor="@color/text_white"
             android:textColorHint="#AAAAAA"
@@ -44,17 +47,19 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <AutoCompleteTextView android:id="@+id/etDestination" android:completionThreshold="3"
+            <AutoCompleteTextView
+                android:id="@+id/etDestination"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:completionThreshold="3"
+                android:contentDescription="Ingresar destino"
                 android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
-                android:hint="Destino (ej: Unicenter)"
+                android:hint="Destino"
                 android:inputType="text"
                 android:textColor="@color/text_white"
                 android:textColorHint="#AAAAAA"
-                android:textSize="14sp"
-                android:contentDescription="Ingresar destino"/>
+                android:textSize="14sp" />
 
             <ImageButton
                 android:id="@+id/btnSaveFavorite"
@@ -74,12 +79,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:contentDescription="Buscar ruta"
             android:text="Buscar Ruta"
             android:textColor="@color/text_black"
             android:textSize="15sp"
             android:textStyle="bold"
-            app:backgroundTint="@color/primary_yellow"
-            android:contentDescription="Buscar ruta"/>
+            app:backgroundTint="@color/primary_yellow" />
 
         <!-- Pestañita para Desplegar / Contraer Opciones -->
         <LinearLayout
@@ -258,12 +263,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:contentDescription="Iniciar monitoreo del viaje"
             android:text="Iniciar Monitoreo"
             android:textColor="@color/text_black"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:backgroundTint="@color/primary_yellow"
-            android:contentDescription="Iniciar monitoreo del viaje"/>
+            app:backgroundTint="@color/primary_yellow" />
     </LinearLayout>
 
 </RelativeLayout>
