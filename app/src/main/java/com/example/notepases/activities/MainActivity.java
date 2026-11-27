@@ -191,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
             tvModeLabel.setText(isChecked ? "Modo Simulación" : "Modo Real");
             if (isChecked){
                 etOrigin.setEnabled(true);
-                etOrigin.setHint("Origen (Opcional)");
+                etOrigin.setHint("Origen");
             } else{
                 if (simulator != null){
                     simulator.stopSimulation();
@@ -459,6 +459,11 @@ public class MainActivity extends AppCompatActivity {
         String originText = etOrigin.getText().toString().trim();
         String destText = etDestination.getText().toString().trim();
 
+        if (switchSimulationMode.isChecked() && originText.isEmpty()) {
+            Toast.makeText(this, "Por favor ingresá un Origen", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (destText.isEmpty()) {
             Toast.makeText(this, "Por favor ingresá un Destino", Toast.LENGTH_SHORT).show();
             return;
@@ -487,16 +492,13 @@ public class MainActivity extends AppCompatActivity {
                 obtenerUbicacionRealYMostrarRuta();
                 return;
             }
-            if (!originText.isEmpty()) {
-                List<Address> originAddresses = geocoder.getFromLocationName(originText, 1);
-                if (originAddresses != null && !originAddresses.isEmpty()) {
-                    Address origAddr = originAddresses.get(0);
-                    originPoint = new GeoPoint(origAddr.getLatitude(), origAddr.getLongitude());
-                } else {
-                    originPoint = (GeoPoint) mapView.getMapCenter();
-                }
+            List<Address> originAddresses = geocoder.getFromLocationName(originText, 1);
+            if (originAddresses != null && !originAddresses.isEmpty()) {
+                Address origAddr = originAddresses.get(0);
+                originPoint = new GeoPoint(origAddr.getLatitude(), origAddr.getLongitude());
             } else {
-                originPoint = (GeoPoint) mapView.getMapCenter();
+                Toast.makeText(this, "No se encontró el Origen", Toast.LENGTH_SHORT).show();
+                return;
             }
 
             mostrarRutaCargada();
@@ -736,20 +738,48 @@ public class MainActivity extends AppCompatActivity {
 
     private void startTrackingService() {
         if (destinationPoint == null) {
-            Toast.makeText(this, "Primero buscá un destino", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Primero buscá un Destino", Toast.LENGTH_SHORT).show();
             return;
         }
         boolean useSimulation = switchSimulationMode.isChecked();
 
+        if (useSimulation && originPoint == null) {
+            Toast.makeText(this, "Primero buscá un Origen", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (!useSimulation){
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(this, "se necesita permiso de GPS para el modo real", Toast.LENGTH_SHORT).show();
-                checkPermissions();
+                Toast.makeText(this, "Se necesita permiso de GPS para el modo real", Toast.LENGTH_SHORT).show();
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                        PERMISSION_REQUEST_CODE);
+                return;
+            }
+        } else if (Build.VERSION.SDK_INT >= 34) {
+            // En Android 14+ iniciar un ForegroundService de tipo location exige permiso de ubicación aunque sea simulación
+            boolean hasLocation = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            if (!hasLocation) {
+                Toast.makeText(this, "Se necesita permiso de ubicación para iniciar el servicio", Toast.LENGTH_SHORT).show();
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                        PERMISSION_REQUEST_CODE);
                 return;
             }
         }
 
-        if (originPoint == null) {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Activá las notificaciones para ver el monitoreo y la alarma", Toast.LENGTH_LONG).show();
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, PERMISSION_REQUEST_CODE);
+        }
+
+        if (!telefonosAsignados.isEmpty() && ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Sin permiso de SMS no se podrá avisar a tus contactos", Toast.LENGTH_LONG).show();
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, PERMISSION_REQUEST_CODE);
+        }
+
+        if (!useSimulation && originPoint == null) {
             originPoint = (GeoPoint) mapView.getMapCenter();
             updateMapGraphics();
         }
@@ -867,6 +897,49 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != PERMISSION_REQUEST_CODE) return;
+
+        List<String> denegados = new ArrayList<>();
+        boolean denegadoPermanente = false;
+
+        for (int i = 0; i < permissions.length; i++) {
+            if (i < grantResults.length && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                String p = permissions[i];
+                if (Manifest.permission.ACCESS_FINE_LOCATION.equals(p) || Manifest.permission.ACCESS_COARSE_LOCATION.equals(p)) {
+                    if (!denegados.contains("Ubicación (GPS)")) denegados.add("Ubicación (GPS)");
+                } else if (Manifest.permission.SEND_SMS.equals(p)) {
+                    denegados.add("Mensajes (SMS)");
+                } else if (Manifest.permission.POST_NOTIFICATIONS.equals(p)) {
+                    denegados.add("Notificaciones");
+                }
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(this, p)) {
+                    denegadoPermanente = true;
+                }
+            }
+        }
+
+        if (denegados.isEmpty()) return;
+
+        String lista = android.text.TextUtils.join(", ", denegados);
+        if (denegadoPermanente) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Permisos requeridos")
+                    .setMessage("Faltan permisos para funcionar correctamente (" + lista + "). Podés habilitarlos desde los Ajustes de la aplicación.")
+                    .setPositiveButton("IR A AJUSTES", (d, w) -> {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("CANCELAR", null)
+                    .show();
+        } else {
+            Toast.makeText(this, "Permiso rechazado: " + lista, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_SCROLL) {
             float scroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
@@ -974,6 +1047,10 @@ public class MainActivity extends AppCompatActivity {
                 btnAsignarContacto.setText("Asignar contacto");
             } else {
                 btnAsignarContacto.setText("Avisar a " + telefonosAsignados.size() + " contacto(s)");
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Sin permiso de SMS no se podrá avisar a tus contactos", Toast.LENGTH_LONG).show();
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, PERMISSION_REQUEST_CODE);
+                }
             }
             dialog.dismiss();
         });
