@@ -144,18 +144,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Configuration.getInstance().setUserAgentValue("NoTePasesApp/1.0 (contacto@notepases.com)");
-        Configuration.getInstance().load(getApplicationContext(),
-                PreferenceManager.getDefaultSharedPreferences(getApplicationContext()));
-
-        // Ajustes de rendimiento de tiles (deben ir despues de load())
         org.osmdroid.config.IConfigurationProvider osmConfig = Configuration.getInstance();
+        osmConfig.load(getApplicationContext(),
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext()));
+        // El User-Agent y los ajustes deben ir SIEMPRE despues de load() para que no se pisen
+        osmConfig.setUserAgentValue("NoTePasesApp/1.0 (contacto@notepases.com)");
         osmConfig.setTileFileSystemCacheMaxBytes(500L * 1024 * 1024);  // cache en disco: 500 MB
         osmConfig.setTileFileSystemCacheTrimBytes(400L * 1024 * 1024); // recorta hasta 400 MB al llenarse
-        osmConfig.setCacheMapTileCount((short) 12);                    // tiles extra en memoria
-        osmConfig.setCacheMapTileOvershoot((short) 12);
-        osmConfig.setTileDownloadThreads((short) 8);                   // descargas en paralelo
-        osmConfig.setTileDownloadMaxQueueSize((short) 80);
+        osmConfig.setCacheMapTileCount((short) 64);                    // tiles en memoria RAM listos para mostrar en la pantalla
+        osmConfig.setCacheMapTileOvershoot((short) 16);                // tiles con 16 de margen
+        osmConfig.setTileDownloadThreads((short) 8);                   // descargas en paralelo (ArcGIS CDN)
+        osmConfig.setTileDownloadMaxQueueSize((short) 80);              // maximo de filas si si es que se mueve muy rapido
         osmConfig.setTileFileSystemThreads((short) 8);                 // lecturas de cache en paralelo
 
         setContentView(R.layout.activity_main);
@@ -208,14 +207,23 @@ public class MainActivity extends AppCompatActivity {
 
         simulator = new DemoLocationSimulator();
 
-        // Configuración del mapa osmdroid
-        mapView.setTileSource(new org.osmdroid.tileprovider.tilesource.XYTileSource(
-                "OSM_Hot", 0, 19, 256, ".png",
-                new String[]{"https://a.tile.openstreetmap.fr/hot/", "https://b.tile.openstreetmap.fr/hot/"}));
+        // Configuración del mapa osmdroid (ArcGIS World Street Map - sin API key y sin bloqueos)
+        mapView.setTileSource(new org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase(
+                "ArcGIS_World_Street_Map", 0, 19, 256, "",
+                new String[]{"https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/"}) { // antes se utilizaba openstreetmap
+            @Override
+            public String getTileURLString(long pMapTileIndex) {
+                return getBaseUrl()
+                        + org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex) + "/"
+                        + org.osmdroid.util.MapTileIndex.getY(pMapTileIndex) + "/"
+                        + org.osmdroid.util.MapTileIndex.getX(pMapTileIndex);
+            }
+        });
+        mapView.setUseDataConnection(true); // asegura que el mapa tenga internet para descargar tiles nuevos
 
         mapView.setMultiTouchControls(true);
         mapView.setTilesScaledToDpi(true); // tiles mas nitidos en pantallas de alta densidad
-        mapView.getController().setZoom(14.0);
+        mapView.getController().setZoom(15.0);
 
         // Ubicación inicial por defecto (Obelisco)
         GeoPoint startPoint = new GeoPoint(-34.6037, -58.3816);
