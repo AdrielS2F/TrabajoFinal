@@ -20,7 +20,6 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Build;
@@ -29,11 +28,15 @@ import android.widget.BaseAdapter;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.annotation.NonNull;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 
 import com.example.notepases.R;
 import com.example.notepases.database.ContactosDAO;
@@ -72,14 +75,18 @@ public class MainActivity extends AppCompatActivity {
 
     private MapView mapView;
     private EditText etOrigin, etDestination;
-    private Button btnSearch, btnStartTracking, btnContactos, btnDestinosFrecuentes;
-    private ImageButton btnSaveFavorite;
+    private Button btnSearch, btnStartTracking, btnContactos;
+    private ImageButton btnSaveFavorite, btnToggleMode, btnVolverMenu;
     private SeekBar sbRadius;
-    private TextView tvRadiusLabel;
+    private TextView tvRadiusLabel, tvFavoritosVacio;
 
-    private TextView tvModeLabel, tvToggleMore;
-    private Switch switchSimulationMode;
-    private LinearLayout layoutToggleMore, layoutExpandableOptions;
+    private BottomNavigationView bottomNavigationView;
+    private BottomSheetBehavior<LinearLayout> bottomSheetBehavior;
+    private LinearLayout bottomSheetMenu, layoutSheetFavoritos, layoutSheetContactos, layoutControls;
+    private ListView lvSheetFavoritos;
+
+    private boolean isSimulationMode = true;
+    private boolean isRouteLoaded = false;
 
     private GeoPoint originPoint;
     private GeoPoint destinationPoint;
@@ -95,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private DestinosDAO destinosDAO;
     private ArrayList<String> telefonosAsignados = new ArrayList<>();
     private boolean isTracking = false;
-    private Button btnAsignarContacto;
+    private Button btnAsignarContacto, btnAsignarContactoViaje;
     private String mensajePersonalizado = ""; // vacio = usar mensaje default (solo en memoria)
     private boolean incluirDistancia = true;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -110,9 +117,11 @@ public class MainActivity extends AppCompatActivity {
                     simulator.stopSimulation();
                 }
                 updateTrackingButtonState(false);
+                mostrarModoRutaCargada(false);
+                Toast.makeText(MainActivity.this, "¡Llegaste a tu destino! Viaje finalizado", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (!switchSimulationMode.isChecked() && TrackingService.ACTION_REAL_LOCATION_UPDATE.equals(intent.getAction())){
+            if (!isSimulationMode && TrackingService.ACTION_REAL_LOCATION_UPDATE.equals(intent.getAction())){
                 double lat = intent.getDoubleExtra(TrackingService.EXTRA_LAT,  0.0);
                 double lng = intent.getDoubleExtra(TrackingService.EXTRA_LNG,  0.0);
                 GeoPoint realPoint = new GeoPoint(lat, lng);
@@ -168,37 +177,102 @@ public class MainActivity extends AppCompatActivity {
         etOrigin = findViewById(R.id.etOrigin);
         etDestination = findViewById(R.id.etDestination);
         btnSaveFavorite = findViewById(R.id.btnSaveFavorite);
+        btnToggleMode = findViewById(R.id.btnToggleMode);
+        btnVolverMenu = findViewById(R.id.btnVolverMenu);
         btnSearch = findViewById(R.id.btnSearch);
         btnContactos = findViewById(R.id.btnContactos);
-        btnDestinosFrecuentes = findViewById(R.id.btnDestinosFrecuentes);
         btnStartTracking = findViewById(R.id.btnStartTracking);
         sbRadius = findViewById(R.id.sbRadius);
         tvRadiusLabel = findViewById(R.id.tvRadiusLabel);
-        tvModeLabel = findViewById(R.id.tvModeLabel);
-        switchSimulationMode = findViewById(R.id.switchSimulationMode);
         btnAsignarContacto = findViewById(R.id.btnAsignarContacto);
+        btnAsignarContactoViaje = findViewById(R.id.btnAsignarContactoViaje);
 
-        // Vistas del Panel Desplegable
-        layoutToggleMore = findViewById(R.id.layoutToggleMore);
-        layoutExpandableOptions = findViewById(R.id.layoutExpandableOptions);
-        tvToggleMore = findViewById(R.id.tvToggleMore);
+        // Vistas de Navegación Inferior y BottomSheet
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        bottomSheetMenu = findViewById(R.id.bottomSheetMenu);
+        layoutSheetFavoritos = findViewById(R.id.layoutSheetFavoritos);
+        layoutSheetContactos = findViewById(R.id.layoutSheetContactos);
+        layoutControls = findViewById(R.id.layoutControls);
+        lvSheetFavoritos = findViewById(R.id.lvSheetFavoritos);
+        tvFavoritosVacio = findViewById(R.id.tvFavoritosVacio);
 
         // Estado inicial de la estrella: deshabilitada hasta buscar un destino válido
         btnSaveFavorite.setEnabled(false);
         btnSaveFavorite.setAlpha(0.4f);
 
-        switchSimulationMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            tvModeLabel.setText(isChecked ? "Modo Simulación" : "Modo Real");
-            if (isChecked){
-                etOrigin.setEnabled(true);
-                etOrigin.setHint("Origen");
-            } else{
-                if (simulator != null){
-                    simulator.stopSimulation();
+        // Configurar botón engranaje (Modo Simulación / Modo Real)
+        actualizarModoSimulacion(true, false);
+        btnToggleMode.setOnClickListener(v -> actualizarModoSimulacion(!isSimulationMode, true));
+
+        // Configurar BottomSheet deslizable
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetMenu);
+        bottomSheetBehavior.setHideable(true);
+        bottomSheetBehavior.setSkipCollapsed(true);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                if (newState == BottomSheetBehavior.STATE_HIDDEN
+                        && !isRouteLoaded
+                        && bottomNavigationView.getSelectedItemId() != R.id.nav_explorar) {
+                    bottomNavigationView.setSelectedItemId(R.id.nav_explorar);
                 }
-                etOrigin.setText("");
-                etOrigin.setHint("Usando tu ubicacion GPS actual...");
-                etOrigin.setEnabled(false);
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) { }
+        });
+
+        // Configurar barra inferior de 3 pestañas (Explorar, Favoritos, Contactos)
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_explorar) {
+                cerrarBottomSheet();
+                return true;
+            } else if (id == R.id.nav_favoritos) {
+                abrirSheetFavoritos();
+                return true;
+            } else if (id == R.id.nav_contactos) {
+                abrirSheetContactos();
+                return true;
+            }
+            return false;
+        });
+
+        bottomNavigationView.setOnItemReselectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_favoritos || id == R.id.nav_contactos) {
+                if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_HIDDEN) {
+                    cerrarBottomSheet();
+                    bottomNavigationView.setSelectedItemId(R.id.nav_explorar);
+                } else if (id == R.id.nav_favoritos) {
+                    abrirSheetFavoritos();
+                } else {
+                    abrirSheetContactos();
+                }
+            }
+        });
+
+        // Botón chico "✕" para volver del panel de monitoreo al menú inferior
+        btnVolverMenu.setOnClickListener(v -> {
+            if (!isTracking) {
+                mostrarModoRutaCargada(false);
+            }
+        });
+
+        // Botón Atrás del dispositivo: cierra el BottomSheet o vuelve al menú inferior
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_HIDDEN) {
+                    cerrarBottomSheet();
+                    bottomNavigationView.setSelectedItemId(R.id.nav_explorar);
+                } else if (isRouteLoaded && !isTracking) {
+                    mostrarModoRutaCargada(false);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
             }
         });
 
@@ -266,21 +340,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btnDestinosFrecuentes.setOnClickListener(v -> mostrarListaDestinosFrecuentes());
-
-        // Listener para abrir / cerrar la pestañita desplegable
-        layoutToggleMore.setOnClickListener(v -> {
-            if (layoutExpandableOptions.getVisibility() == View.GONE) {
-                layoutExpandableOptions.setVisibility(View.VISIBLE);
-                tvToggleMore.setText("Menos opciones ▲");
-                layoutToggleMore.announceForAccessibility("Opciones adicionales desplegadas");
-            } else {
-                layoutExpandableOptions.setVisibility(View.GONE);
-                tvToggleMore.setText("Más opciones ▼");
-                layoutToggleMore.announceForAccessibility("Opciones adicionales contraídas");
-            }
-        });
-
         // Control de Slider de Radio
         sbRadius.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -311,12 +370,8 @@ public class MainActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
-        btnAsignarContacto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mostrarContactosParaViaje();
-            }
-        });
+        btnAsignarContacto.setOnClickListener(v -> mostrarContactosParaViaje());
+        btnAsignarContactoViaje.setOnClickListener(v -> mostrarContactosParaViaje());
 
         setupMapLongClickListener();
     }
@@ -411,6 +466,9 @@ public class MainActivity extends AppCompatActivity {
                         if (isTracking){
                             stopTrackingService();
                         }
+                        if (isRouteLoaded) {
+                            mostrarModoRutaCargada(false);
+                        }
                         // 4. Redibujar el mapa
                         mapView.invalidate();
 
@@ -422,9 +480,68 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void actualizarModoSimulacion(boolean simulacion, boolean mostrarToast) {
+        isSimulationMode = simulacion;
+        if (simulacion) {
+            etOrigin.setEnabled(true);
+            etOrigin.setHint("Origen");
+            btnToggleMode.setColorFilter(ContextCompat.getColor(this, R.color.primary_yellow));
+            btnToggleMode.setContentDescription("Modo Simulación activo. Tocar para cambiar a Modo Real");
+            if (mostrarToast) {
+                Toast.makeText(this, "Modo Simulación activado", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            if (simulator != null) {
+                simulator.stopSimulation();
+            }
+            etOrigin.setText("");
+            etOrigin.setHint("Usando tu ubicación GPS actual...");
+            etOrigin.setEnabled(false);
+            btnToggleMode.setColorFilter(Color.parseColor("#888888"));
+            btnToggleMode.setContentDescription("Modo Real activo. Tocar para cambiar a Modo Simulación");
+            if (mostrarToast) {
+                Toast.makeText(this, "Modo Real (GPS) activado", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void cerrarBottomSheet() {
+        if (bottomSheetBehavior != null && bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_HIDDEN) {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        }
+    }
+
+    private void abrirSheetFavoritos() {
+        cargarListaFavoritosEnSheet();
+        layoutSheetFavoritos.setVisibility(View.VISIBLE);
+        layoutSheetContactos.setVisibility(View.GONE);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+    }
+
+    private void abrirSheetContactos() {
+        layoutSheetContactos.setVisibility(View.VISIBLE);
+        layoutSheetFavoritos.setVisibility(View.GONE);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+    }
+
+    private void mostrarModoRutaCargada(boolean mostrar) {
+        isRouteLoaded = mostrar;
+        if (mostrar) {
+            cerrarBottomSheet();
+            bottomNavigationView.setVisibility(View.GONE);
+            layoutControls.setVisibility(View.VISIBLE);
+            btnVolverMenu.setVisibility(isTracking ? View.GONE : View.VISIBLE);
+        } else {
+            layoutControls.setVisibility(View.GONE);
+            bottomNavigationView.setVisibility(View.VISIBLE);
+            bottomNavigationView.setSelectedItemId(R.id.nav_explorar);
+        }
+    }
+
     private void mostrarRutaCargada() {
         updateMapGraphics();
         ajustarCamaraParaMostrarPuntos(originPoint, destinationPoint);
+        mostrarModoRutaCargada(true);
         Toast.makeText(this, "Ruta cargada correctamente", Toast.LENGTH_SHORT).show();
     }
 
@@ -459,7 +576,7 @@ public class MainActivity extends AppCompatActivity {
         String originText = etOrigin.getText().toString().trim();
         String destText = etDestination.getText().toString().trim();
 
-        if (switchSimulationMode.isChecked() && originText.isEmpty()) {
+        if (isSimulationMode && originText.isEmpty()) {
             Toast.makeText(this, "Por favor ingresá un Origen", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -487,7 +604,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             // 2. Origen
-            if (!switchSimulationMode.isChecked()) {
+            if (!isSimulationMode) {
                 // MODO REAL: usar la ubicación GPS actual del dispositivo
                 obtenerUbicacionRealYMostrarRuta();
                 return;
@@ -578,25 +695,17 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void mostrarListaDestinosFrecuentes() {
+    private void cargarListaFavoritosEnSheet() {
         ArrayList<Destino> lista = destinosDAO.getListadoDestinos();
 
         if (lista.isEmpty()) {
-            Toast.makeText(this, "No tenés destinos guardados aún", Toast.LENGTH_SHORT).show();
+            tvFavoritosVacio.setVisibility(View.VISIBLE);
+            lvSheetFavoritos.setVisibility(View.GONE);
             return;
         }
 
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_favoritos_lista, null);
-        ListView lvDestinos = dialogView.findViewById(R.id.lvDestinosFavoritos);
-        Button btnCerrar = dialogView.findViewById(R.id.btnCerrarFavoritos);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setView(dialogView)
-                .create();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
+        tvFavoritosVacio.setVisibility(View.GONE);
+        lvSheetFavoritos.setVisibility(View.VISIBLE);
 
         BaseAdapter adapter = new BaseAdapter() {
             @Override
@@ -656,7 +765,8 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     Toast.makeText(MainActivity.this, "Cargado: " + destino.getNombre(), Toast.LENGTH_SHORT).show();
-                    dialog.dismiss();
+                    cerrarBottomSheet();
+                    bottomNavigationView.setSelectedItemId(R.id.nav_explorar);
                 });
 
                 // Borrar destino con confirmación previa
@@ -671,7 +781,8 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(MainActivity.this, "Destino eliminado", Toast.LENGTH_SHORT).show();
 
                                 if (lista.isEmpty()) {
-                                    dialog.dismiss();
+                                    tvFavoritosVacio.setVisibility(View.VISIBLE);
+                                    lvSheetFavoritos.setVisibility(View.GONE);
                                 }
                             })
                             .setNegativeButton("CANCELAR", null)
@@ -682,10 +793,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        lvDestinos.setAdapter(adapter);
-        btnCerrar.setOnClickListener(v -> dialog.dismiss());
-
-        dialog.show();
+        lvSheetFavoritos.setAdapter(adapter);
     }
 
     // Al mover el slider solo se recalcula el circulo existente.
@@ -741,7 +849,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Primero buscá un Destino", Toast.LENGTH_SHORT).show();
             return;
         }
-        boolean useSimulation = switchSimulationMode.isChecked();
+        boolean useSimulation = isSimulationMode;
 
         if (useSimulation && originPoint == null) {
             Toast.makeText(this, "Primero buscá un Origen", Toast.LENGTH_SHORT).show();
@@ -846,13 +954,18 @@ public class MainActivity extends AppCompatActivity {
         if (tracking){
             btnStartTracking.setText("Detener Monitoreo");
             btnStartTracking.setTextColor(Color.WHITE);
-            btnStartTracking.setBackgroundColor(Color.RED);
+            btnStartTracking.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.RED));
             btnStartTracking.setContentDescription("Detener Monitoreo");
+            if (btnVolverMenu != null) btnVolverMenu.setVisibility(View.GONE);
+            if (btnAsignarContactoViaje != null) btnAsignarContactoViaje.setVisibility(View.GONE);
         } else {
             btnStartTracking.setText("Iniciar Monitoreo");
             btnStartTracking.setTextColor(Color.BLACK);
-            btnStartTracking.setBackgroundColor(Color.YELLOW);
+            btnStartTracking.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(this, R.color.accent_yellow)));
             btnStartTracking.setContentDescription("Iniciar Monitoreo");
+            if (btnVolverMenu != null) btnVolverMenu.setVisibility(View.VISIBLE);
+            if (btnAsignarContactoViaje != null) btnAsignarContactoViaje.setVisibility(View.VISIBLE);
         }
     }
     private void stopTrackingService() {
@@ -962,6 +1075,16 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(TrackingService.ACTION_REAL_LOCATION_UPDATE);
         filter.addAction("ACTION_STOP_SIMULATOR");
         ContextCompat.registerReceiver(this, realLocationReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
+
+        // Si el viaje finalizó al llegar al destino mientras estaba en segundo plano, sincronizar el estado
+        if (isTracking && !TrackingService.isRunning) {
+            if (simulator != null) {
+                simulator.stopSimulation();
+            }
+            updateTrackingButtonState(false);
+            mostrarModoRutaCargada(false);
+            Toast.makeText(this, "¡Llegaste a tu destino! Viaje finalizado", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -969,6 +1092,15 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         mapView.onPause();
         unregisterReceiver(realLocationReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (simulator != null) {
+            simulator.stopSimulation();
+        }
+        executorService.shutdownNow();
     }
 
     // segundo dialog: la lista de contactos guardados en la bd, para elegir uno
@@ -1044,9 +1176,11 @@ public class MainActivity extends AppCompatActivity {
 
             // CAMBIO DE TEXTO EN BTN SEGUN SI TIENE ASIGNADO O NO CONTACTO
             if (telefonosAsignados.isEmpty()) {
-                btnAsignarContacto.setText("Asignar contacto");
+                btnAsignarContacto.setText("Asignar contacto al viaje");
+                btnAsignarContactoViaje.setText("Avisar");
             } else {
                 btnAsignarContacto.setText("Avisar a " + telefonosAsignados.size() + " contacto(s)");
+                btnAsignarContactoViaje.setText("Avisar (" + telefonosAsignados.size() + ")");
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "Sin permiso de SMS no se podrá avisar a tus contactos", Toast.LENGTH_LONG).show();
                     ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, PERMISSION_REQUEST_CODE);

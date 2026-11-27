@@ -60,6 +60,7 @@ public class DemoLocationSimulator {
                 }
 
                 GeoPoint currentPoint = points.get(index);
+                boolean esUltimoPaso = (index == points.size() - 1);
 
                 // 1. Mover el mapa y marcador visual
                 listener.onLocationChanged(currentPoint);
@@ -70,6 +71,7 @@ public class DemoLocationSimulator {
                 intent.putExtra("DEST_LNG", destination.getLongitude());
                 intent.putExtra("SIMULATED_LAT", currentPoint.getLatitude());
                 intent.putExtra("SIMULATED_LNG", currentPoint.getLongitude());
+                intent.putExtra("IS_FINAL_POINT", esUltimoPaso);
 
                 context.startService(intent);
 

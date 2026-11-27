@@ -1,274 +1,229 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/dark_background">
 
-    <!-- Mapa OpenStreetMap -->
-    <org.osmdroid.views.MapView
-        android:id="@+id/mapView"
+    <!-- Pantalla Principal en ConstraintLayout (fácil de mover en el editor visual) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="Mapa"/>
+        android:layout_height="match_parent">
 
-    <!-- Panel Superior: Búsqueda y Accesos Directos -->
-    <LinearLayout
-        android:id="@+id/layoutSearch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_margin="12dp"
-        android:background="@color/card_background"
-        android:elevation="6dp"
-        android:orientation="vertical"
-        android:padding="12dp">
+        <!-- Mapa OpenStreetMap -->
+        <org.osmdroid.views.MapView
+            android:id="@+id/mapView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Mapa"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Campo Origen -->
-        <AutoCompleteTextView
-            android:id="@+id/etOrigin"
-            android:layout_width="322dp"
-            android:layout_height="wrap_content"
-            android:completionThreshold="3"
-            android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
-            android:dropDownVerticalOffset="0dp"
-            android:hint="Origen"
-            android:inputType="text"
-            android:textColor="@color/text_white"
-            android:textColorHint="#AAAAAA"
-            android:textSize="14sp" />
-
-        <!-- Campo Destino + Botón Estrella Favorito -->
+        <!-- Panel Superior: Origen (+ Engranaje), Destino (+ Estrella) y Buscar -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:id="@+id/layoutSearch"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_margin="12dp"
+            android:background="@color/card_background"
+            android:elevation="6dp"
+            android:orientation="vertical"
+            android:padding="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <AutoCompleteTextView
-                android:id="@+id/etDestination"
-                android:layout_width="0dp"
+            <!-- Campo Origen + Botón Engranaje -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:completionThreshold="3"
-                android:contentDescription="Ingresar destino"
-                android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
-                android:hint="Destino"
-                android:inputType="text"
-                android:textColor="@color/text_white"
-                android:textColorHint="#AAAAAA"
-                android:textSize="14sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <ImageButton
-                android:id="@+id/btnSaveFavorite"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Guardar Destino Favorito"
-                android:src="@android:drawable/btn_star_big_off"
-                app:tint="@color/primary_yellow" />
+                <AutoCompleteTextView
+                    android:id="@+id/etOrigin"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:completionThreshold="3"
+                    android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
+                    android:dropDownVerticalOffset="0dp"
+                    android:hint="Origen"
+                    android:inputType="text"
+                    android:textColor="@color/text_white"
+                    android:textColorHint="#AAAAAA"
+                    android:textSize="14sp" />
 
-        </LinearLayout>
+                <ImageButton
+                    android:id="@+id/btnToggleMode"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Cambiar entre Modo Simulación y Modo Real"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_settings_gear"
+                    app:tint="@color/primary_yellow" />
+            </LinearLayout>
 
-        <!-- Botón Principal: Buscar Ruta (a lo largo) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSearch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:contentDescription="Buscar ruta"
-            android:text="Buscar Ruta"
-            android:textColor="@color/text_black"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/primary_yellow" />
-
-        <!-- Pestañita para Desplegar / Contraer Opciones -->
-        <LinearLayout
-            android:id="@+id/layoutToggleMore"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:padding="4dp">
-
-            <TextView
-                android:id="@+id/tvToggleMore"
-                android:layout_width="wrap_content"
+            <!-- Campo Destino + Botón Estrella Favorito -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Más opciones ▼"
-                android:textColor="@color/primary_yellow"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <!-- Panel Desplegable (Oculto por defecto) -->
-        <LinearLayout
-            android:id="@+id/layoutExpandableOptions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal"
-            android:visibility="gone">
+                <AutoCompleteTextView
+                    android:id="@+id/etDestination"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:completionThreshold="3"
+                    android:contentDescription="Ingresar destino"
+                    android:drawableEnd="@android:drawable/ic_menu_close_clear_cancel"
+                    android:hint="Destino"
+                    android:inputType="text"
+                    android:textColor="@color/text_white"
+                    android:textColorHint="#AAAAAA"
+                    android:textSize="14sp" />
 
+                <ImageButton
+                    android:id="@+id/btnSaveFavorite"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Guardar Destino Favorito"
+                    android:src="@android:drawable/btn_star_big_off"
+                    app:tint="@color/primary_yellow" />
+            </LinearLayout>
+
+            <!-- Botón Principal: Buscar Ruta -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnContactos"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
+                android:id="@+id/btnSearch"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:layout_weight="1"
-                android:text="Contactos"
-                android:textColor="@color/primary_yellow"
+                android:layout_marginTop="8dp"
+                android:contentDescription="Buscar ruta"
+                android:text="Buscar Ruta"
+                android:textColor="@color/text_black"
+                android:textSize="15sp"
                 android:textStyle="bold"
-                app:strokeColor="@color/primary_yellow"
-                app:strokeWidth="1dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDestinosFrecuentes"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:text="Favoritos"
-                android:textColor="@color/primary_yellow"
-                android:textStyle="bold"
-                app:strokeColor="@color/primary_yellow"
-                app:strokeWidth="1dp" />
-
+                app:backgroundTint="@color/accent_yellow" />
         </LinearLayout>
 
-    </LinearLayout>
-
-    <!-- Botones de Zoom flotantes (+) y (-) -->
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/layoutControls"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:orientation="vertical">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnZoomIn"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginBottom="8dp"
-            android:padding="0dp"
-            android:text="+"
-            android:textColor="@color/text_black"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/primary_yellow"
-            app:cornerRadius="24dp"
-            android:contentDescription="Acercar mapa"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnZoomOut"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:padding="0dp"
-            android:text="-"
-            android:textColor="@color/text_black"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/primary_yellow"
-            app:cornerRadius="24dp"
-            android:contentDescription="Alejar mapa"/>
-    </LinearLayout>
-
-    <!-- Panel Inferior: Controles de Simulación y Monitoreo -->
-    <LinearLayout
-        android:id="@+id/layoutControls"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_margin="12dp"
-        android:background="@color/card_background"
-        android:elevation="6dp"
-        android:orientation="vertical"
-        android:padding="16dp">
-
+        <!-- Botones de Zoom flotantes (+) y (-) -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tvModeLabel"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Modo Simulacion"
-                android:textColor="@color/text_white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <Switch
-                android:id="@+id/switchSimulationMode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:thumbTint="@color/card_background"
-                android:trackTint="@color/primary_yellow"
-                tools:ignore="UseSwitchCompatOrMaterialXml" />
-
-        </LinearLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAsignarContacto"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Asignar contacto al viaje"
-            android:textColor="@color/primary_yellow"
-            android:textStyle="bold"
-            app:strokeColor="@color/primary_yellow"
-            app:strokeWidth="1dp"
-            android:contentDescription="Asignar contacto al viaje"/>
-
-        <TextView
-            android:id="@+id/tvRadiusLabel"
+            android:id="@+id/layoutZoomButtons"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Radio de Alerta: 300 m"
-            android:textColor="@color/primary_yellow"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_marginEnd="16dp"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toTopOf="@id/layoutControls"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutSearch"
+            app:layout_constraintVertical_bias="0.45"
+            app:layout_goneMarginBottom="96dp">
 
-        <SeekBar
-            android:id="@+id/sbRadius"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:max="880"
-            android:progress="180"
-            android:progressTint="@color/primary_yellow"
-            android:thumbTint="@color/primary_yellow"
-            android:contentDescription="Radio de alerta en metros"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomIn"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginBottom="8dp"
+                android:contentDescription="Acercar mapa"
+                android:padding="0dp"
+                android:text="+"
+                android:textColor="@color/text_black"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/primary_yellow"
+                app:cornerRadius="24dp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStartTracking"
-            android:layout_width="match_parent"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomOut"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="Alejar mapa"
+                android:padding="0dp"
+                android:text="-"
+                android:textColor="@color/text_black"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/primary_yellow"
+                app:cornerRadius="24dp" />
+        </LinearLayout>
+
+        <!-- Panel de Monitoreo (editar en layout_panel_monitoreo.xml) -->
+        <include
+            android:id="@+id/layoutControls"
+            layout="@layout/layout_panel_monitoreo"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:contentDescription="Iniciar monitoreo del viaje"
-            android:text="Iniciar Monitoreo"
-            android:textColor="@color/text_black"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/primary_yellow" />
+            android:layout_margin="12dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:visibility="gone" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- BottomSheet Deslizable (editar contenidos en layout_sheet_favoritos.xml y layout_sheet_contactos.xml) -->
+    <LinearLayout
+        android:id="@+id/bottomSheetMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_bottom_sheet"
+        android:clickable="true"
+        android:elevation="10dp"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="88dp"
+        app:behavior_hideable="true"
+        app:behavior_peekHeight="0dp"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        tools:visibility="gone">
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="14dp"
+            android:background="#666666" />
+
+        <include
+            android:id="@+id/layoutSheetFavoritos"
+            layout="@layout/layout_sheet_favoritos"
+            android:visibility="gone" />
+
+        <include
+            android:id="@+id/layoutSheetContactos"
+            layout="@layout/layout_sheet_contactos"
+            android:visibility="gone" />
+
     </LinearLayout>
 
-</RelativeLayout>
+    <!-- Barra de Navegación Inferior (3 pestañas) -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/card_background"
+        android:elevation="16dp"
+        app:itemActiveIndicatorStyle="@null"
+        app:itemIconTint="@color/selector_bottom_nav"
+        app:itemTextColor="@color/selector_bottom_nav"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/menu_bottom_nav" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

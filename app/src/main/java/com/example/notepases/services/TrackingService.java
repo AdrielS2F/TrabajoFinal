@@ -37,6 +37,7 @@ public class TrackingService extends Service {
     public static final String ACTION_REAL_LOCATION_UPDATE = "com.example.notepases.REAL_LOCATION_UPDATE";
     public static final String EXTRA_LAT = "EXTRA_LAT";
     public static final String EXTRA_LNG = "EXTRA_LNG";
+    public static volatile boolean isRunning = false;
 
     private String destinationAddress = "Dirección no disponible";
     private static final String CHANNEL_ID = "NoTePases_Channel";
@@ -55,6 +56,7 @@ public class TrackingService extends Service {
     private String customMessage = "";
     private boolean includeDistance = true;
 
+    private static final float DESTINATION_ARRIVAL_METERS = 35f;
     private static final String ALARM_CHANNEL_ID = "Alarma_Channel";
 
     @Override
@@ -70,19 +72,10 @@ public class TrackingService extends Service {
             if (intent != null){
                 String action = intent.getAction();
 
-                /// SIlencia alarma y detine el monitoreo al llegar
+                /// Silencia la alarma pero mantiene el monitoreo activo hasta llegar al destino
                 if ("ACTION_MUTE_ALERT".equals(action)) {
-                 alertAlreadyTriggered = true;
-                 stopLocationUpdates();
-                 stopForeground(true);
-
-                 Intent stopSimIntent = new Intent("ACTION_STOP_SIMULATOR");
-                 stopSimIntent.setPackage(getPackageName());
-                 sendBroadcast(stopSimIntent);
-
-                 return START_NOT_STICKY;
-
-
+                    alertAlreadyTriggered = true;
+                    return START_STICKY;
                 }
                 /// este if reinicia la bandera para un nuevo viaje
                 if ("ACTION_RESET_ALERT".equals(action)) {
@@ -97,6 +90,7 @@ public class TrackingService extends Service {
                 }
                 /// esto es opcional para mas adelante si se quiere detener el servicio de manera manual y forzada
                 if(ACTION_STOP_SERVICE.equals(action)){
+                    isRunning = false;
                     stopLocationUpdates();
                     stopForeground(true);
                     stopSelf();
@@ -138,24 +132,32 @@ public class TrackingService extends Service {
                 // Recibiendo pasos del simulador
                 if (intent.hasExtra("SIMULATED_LAT") && intent.hasExtra("SIMULATED_LNG")) {
 
-                    if (!isSimulationMode || alertAlreadyTriggered) return START_NOT_STICKY; //Ignorar si cambio a mood real
+                    if (!isSimulationMode || !isRunning) return START_NOT_STICKY; // Ignorar si cambió a modo real o ya finalizó
 
                     double simLat = intent.getDoubleExtra("SIMULATED_LAT", 0.0);
                     double simLng = intent.getDoubleExtra("SIMULATED_LNG", 0.0);
+                    boolean esUltimoPaso = intent.getBooleanExtra("IS_FINAL_POINT", false);
 
                     float distance = LocationUtils.calculateDistanceInMeters(simLat, simLng, destLat, destLng);
-                    updateNotification("[Simulacion]Distancia al destino: " + (int) distance + " m");
+                    updateNotification("[Simulación] Distancia al destino: " + (int) distance + " m");
 
-                    // Si ingresó al radio de alerta, disparar alarma y detener servicio
+                    // 1. Al ingresar al radio de alerta, disparar alarma (el viaje continúa)
                     if (distance <= alertRadius && !alertAlreadyTriggered) {
                         alertAlreadyTriggered = true;
                         triggerArrivalAlert(distance);
+                    }
+
+                    // 2. Al llegar al destino final, finalizar viaje y monitoreo
+                    if (esUltimoPaso || distance <= DESTINATION_ARRIVAL_METERS) {
+                        finalizarViajeAlLlegar();
+                        return START_NOT_STICKY;
                     }
                     return START_STICKY;
                 }
                 Notification notification  = buildNotification(
                         isSimulationMode ? "Iniciando simulacion..." : "Esperando señal del gps Real..."
                 );
+                isRunning = true;
                 startForeground(NOTIFICATION_ID, notification);
 
                 if (isSimulationMode){
@@ -167,7 +169,7 @@ public class TrackingService extends Service {
         } catch (Exception e){
             e.printStackTrace();
         }
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
 
@@ -202,6 +204,10 @@ public class TrackingService extends Service {
                     if (currentDistance <= alertRadius && !alertAlreadyTriggered) {
                         alertAlreadyTriggered = true;
                         triggerArrivalAlert(currentDistance);
+                    }
+
+                    if (currentDistance <= DESTINATION_ARRIVAL_METERS) {
+                        finalizarViajeAlLlegar();
                         break;
                     }
                 }
@@ -239,13 +245,7 @@ public class TrackingService extends Service {
             SmsUtils.sendArrivalSms(this, numero, message);
         }
 
-        // Al llegar, se elimina la notificación "NoTePases en ejecución" y se deja de monitorear
-        stopLocationUpdates();
-        stopForeground(true);
-        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        if (nm != null) nm.cancel(NOTIFICATION_ID);
-
-        // Abrir la pantalla de alerta
+        // Abrir la pantalla de alerta (el monitoreo continúa activo hasta llegar al destino)
         Intent alertIntent = new Intent(this, AlertActivity.class);
         alertIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -274,6 +274,20 @@ public class TrackingService extends Service {
         try{
             startActivity(alertIntent);
         }catch(Exception e){e.printStackTrace();}
+    }
+
+    private void finalizarViajeAlLlegar() {
+        isRunning = false;
+        stopLocationUpdates();
+        stopForeground(true);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(NOTIFICATION_ID);
+
+        Intent stopSimIntent = new Intent("ACTION_STOP_SIMULATOR");
+        stopSimIntent.setPackage(getPackageName());
+        sendBroadcast(stopSimIntent);
+
+        stopSelf();
     }
 
     private void createNotificationChannel() {
@@ -332,9 +346,29 @@ public class TrackingService extends Service {
     }
 
     @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        isRunning = false;
+        stopLocationUpdates();
+        stopForeground(true);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) {
+            nm.cancel(NOTIFICATION_ID);
+            nm.cancel(2002);
+        }
+        stopSelf();
+        super.onTaskRemoved(rootIntent);
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
+        isRunning = false;
         stopLocationUpdates();
+        stopForeground(true);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) {
+            nm.cancel(NOTIFICATION_ID);
+        }
     }
 
     @Nullable
